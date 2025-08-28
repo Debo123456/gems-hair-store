@@ -1,26 +1,149 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 262.1 83.3% 57.8%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 262.1 83.3% 57.8%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Mobile-optimized touch targets */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  /* Mobile-friendly button sizes */
+  .mobile-button {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Mobile-optimized form inputs */
+  .mobile-input {
+    @apply h-12 text-base;
+  }
+  
+  /* Mobile navigation styles */
+  .mobile-nav-item {
+    @apply flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors;
+  }
+  
+  /* Mobile card interactions */
+  .mobile-card {
+    @apply transition-all duration-300 hover:shadow-lg;
+  }
+  
+  /* Mobile progress indicator */
+  .progress-step {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300;
+  }
+  
+  .progress-step.completed {
+    @apply bg-green-500 text-white;
+  }
+  
+  .progress-step.current {
+    @apply bg-purple-600 text-white;
+  }
+  
+  .progress-step.pending {
+    @apply bg-gray-200 text-gray-600;
+  }
+  
+  /* Mobile expandable sections */
+  .expandable-section {
+    @apply transition-all duration-300 overflow-hidden;
+  }
+  
+  .expandable-section.expanded {
+    @apply max-h-96 opacity-100;
+  }
+  
+  .expandable-section.collapsed {
+    @apply max-h-0 opacity-0;
+  }
+  
+  /* Mobile-specific utilities */
+  .mobile-only {
+    @apply block md:hidden;
+  }
+  
+  .desktop-only {
+    @apply hidden md:block;
+  }
+}
+
+/* Mobile-specific media queries */
+@media (max-width: 640px) {
+  /* Ensure minimum touch target sizes */
+  button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Add active states for touch feedback */
+  .touch\:scale-95:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Focus styles for accessibility */
+.mobile-input:focus,
+.mobile-select:focus,
+.mobile-button:focus {
+  @apply outline-none ring-2 ring-purple-500 ring-offset-2;
 }
