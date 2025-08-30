@@ -28,12 +28,12 @@ export default function SignInPage() {
       const { error } = await signIn(email, password)
       
       if (error) {
-        setError(error.message)
+        setError(typeof error === 'string' ? error : error.message || 'Sign in failed')
       } else {
         router.push("/dashboard")
       }
     } catch (err) {
-      setError("An unexpected error occurred" + err)
+      setError("An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
