@@ -66,10 +66,10 @@ export default function SignUpPage() {
     setIsLoading(true)
 
     try {
-      const { error } = await signUp(formData.email, formData.password, formData.fullName)
+      const result = await signUp(formData.email, formData.password, formData.fullName)
       
-      if (error) {
-        setError(error.message)
+      if (result.error) {
+        setError(result.error)
       } else {
         setSuccess("Account created successfully! Please check your email to verify your account.")
         setTimeout(() => {
@@ -77,7 +77,7 @@ export default function SignUpPage() {
         }, 3000)
       }
     } catch (err) {
-      setError("An unexpected error occurred" + err)
+      setError("An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
