@@ -202,7 +202,7 @@ export default function CategoryPage() {
             </h2>
             {state.filters.query && (
               <Badge variant="secondary">
-                Search: "{state.filters.query}"
+                Search: &ldquo;{state.filters.query}&rdquo;
               </Badge>
             )}
           </div>
@@ -213,7 +213,7 @@ export default function CategoryPage() {
             <select 
               className="border rounded-lg px-3 py-2 text-sm"
               value={state.sort.field}
-              onChange={(e) => setSort({ field: e.target.value as any, direction: 'asc' })}
+              onChange={(e) => setSort({ field: e.target.value as 'name' | 'price' | 'rating' | 'created_at', direction: 'asc' })}
             >
               <option value="name">Name (A-Z)</option>
               <option value="price">Price (Low to High)</option>
@@ -341,7 +341,7 @@ export default function CategoryPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
               <p className="text-gray-600 mb-4">
                 {state.filters.query 
-                  ? `No products match your search for "${state.filters.query}"`
+                  ? `No products match your search for &ldquo;${state.filters.query}&rdquo;`
                   : "No products available in this category"
                 }
               </p>
