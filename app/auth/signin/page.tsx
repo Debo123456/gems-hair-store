@@ -25,10 +25,10 @@ export default function SignInPage() {
     setIsLoading(true)
 
     try {
-      const { error } = await signIn(email, password)
+      const result = await signIn(email, password)
       
-      if (error) {
-        setError(typeof error === 'string' ? error : error.message || 'Sign in failed')
+      if (result.error) {
+        setError(result.error)
       } else {
         router.push("/dashboard")
       }
