@@ -10,6 +10,7 @@ import { useCart } from "@/hooks/useCart"
 import { useWishlist } from "@/hooks/useWishlist"
 import { ProductService } from "@/lib/productService"
 import { Product } from "@/lib/supabase"
+import Link from "next/link"
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [quantity, setQuantity] = useState(1)
@@ -81,7 +82,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h1>
           <p className="text-gray-600 mb-4">{error || 'The product you\'re looking for doesn\'t exist.'}</p>
           <Button asChild>
-            <a href="/products">Back to Products</a>
+            <Link href="/products">Back to Products</Link>
           </Button>
         </div>
       </div>
@@ -132,9 +133,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-3">
           <nav className="flex text-sm text-gray-500">
-            <a href="/" className="hover:text-purple-600">Home</a>
+            <Link href="/" className="hover:text-purple-600">Home</Link>
             <span className="mx-2">/</span>
-            <a href="/products" className="hover:text-purple-600">Products</a>
+            <Link href="/products" className="hover:text-purple-600">Products</Link>
             <span className="mx-2">/</span>
             <span className="text-gray-900">{product.name}</span>
           </nav>

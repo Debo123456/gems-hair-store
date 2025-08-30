@@ -31,7 +31,12 @@ export function ProductManagement() {
       image: "/products/hair-mask.jpg",
       inStock: true,
       stockQuantity: 45,
-      tags: ["deep conditioning", "damaged hair", "repair"]
+      sizes: ["250ml", "500ml"],
+      features: ["Deep conditioning", "Repair", "Moisturizing"],
+      tags: ["deep conditioning", "damaged hair", "repair"],
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-15T00:00:00Z",
+      images: ["/products/hair-mask.jpg"]
     },
     {
       id: "2",
@@ -45,7 +50,12 @@ export function ProductManagement() {
       image: "/products/volumizing-shampoo.jpg",
       inStock: true,
       stockQuantity: 32,
-      tags: ["volume", "fine hair", "body"]
+      sizes: ["250ml", "500ml"],
+      features: ["Volume", "Body", "Fine hair"],
+      tags: ["volume", "fine hair", "body"],
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-15T00:00:00Z",
+      images: ["/products/volumizing-shampoo.jpg"]
     },
     {
       id: "3",
@@ -59,7 +69,12 @@ export function ProductManagement() {
       image: "/products/heat-protection.jpg",
       inStock: false,
       stockQuantity: 0,
-      tags: ["heat protection", "styling", "damage prevention"]
+      sizes: ["150ml", "300ml"],
+      features: ["Heat protection", "Styling", "Damage prevention"],
+      tags: ["heat protection", "styling", "damage prevention"],
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-15T00:00:00Z",
+      images: ["/products/heat-protection.jpg"]
     }
   ]
 
@@ -212,14 +227,14 @@ export function ProductManagement() {
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold">${product.price}</span>
-                    {product.originalPrice > product.price && (
+                    {product.originalPrice && product.originalPrice > product.price && (
                       <span className="text-sm text-gray-500 line-through">
                         ${product.originalPrice}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={getStockStatus(product).color as any}>
+                    <Badge variant={getStockStatus(product).color as "default" | "destructive" | "secondary" | "outline"}>
                       {getStockStatus(product).label}
                     </Badge>
                     <Badge variant="outline">{product.category}</Badge>
@@ -294,14 +309,14 @@ export function ProductManagement() {
                         </td>
                         <td className="p-4">
                           <div className="font-medium">${product.price}</div>
-                          {product.originalPrice > product.price && (
+                          {product.originalPrice && product.originalPrice > product.price && (
                             <div className="text-sm text-gray-500 line-through">
                               ${product.originalPrice}
                             </div>
                           )}
                         </td>
                         <td className="p-4">
-                          <Badge variant={getStockStatus(product).color as any}>
+                          <Badge variant={getStockStatus(product).color as "default" | "destructive" | "secondary" | "outline"}>
                             {getStockStatus(product).label}
                           </Badge>
                           <div className="text-sm text-gray-600 mt-1">

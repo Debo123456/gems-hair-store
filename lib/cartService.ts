@@ -195,7 +195,14 @@ export class CartService {
   }
 
   // Sync local cart with Supabase (for guest users who sign in)
-  static async syncLocalCart(userId: string, localCartItems: any[]): Promise<boolean> {
+  static async syncLocalCart(userId: string, localCartItems: Array<{
+    id: string
+    name: string
+    price: number
+    image: string
+    quantity: number
+    size: string
+  }>): Promise<boolean> {
     try {
       if (localCartItems.length === 0) return true
 

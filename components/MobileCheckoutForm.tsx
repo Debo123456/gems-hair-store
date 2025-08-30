@@ -14,7 +14,24 @@ import {
 } from "lucide-react"
 
 interface MobileCheckoutFormProps {
-  onSubmit: (data: any) => void
+  onSubmit: (data: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+    cardNumber: string
+    expiryDate: string
+    cvv: string
+    cardholderName: string
+    saveInfo: boolean
+    newsletter: boolean
+    terms: boolean
+  }) => void
   isLoading?: boolean
 }
 
@@ -280,7 +297,7 @@ export function MobileCheckoutForm({ onSubmit, isLoading = false }: MobileChecko
                   <span className="text-sm font-medium">Bank Transfer Details</span>
                 </div>
                 <p className="text-sm text-blue-700 mt-2">
-                  You'll receive bank transfer instructions after placing your order.
+                  You will receive bank transfer instructions after placing your order.
                 </p>
               </div>
               

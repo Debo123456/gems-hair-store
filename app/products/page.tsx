@@ -7,12 +7,13 @@ import { Search, Star, Loader2 } from "lucide-react"
 import { AdvancedSearch } from "@/components/AdvancedSearch"
 import { useSearch } from "@/hooks/useSearch"
 import { useCart } from "@/hooks/useCart"
+import { Product } from "@/lib/supabase"
 
 export default function ProductsPage() {
   const { state, loadMoreProducts, clearSearch } = useSearch()
   const { addToCart } = useCart()
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: Product) => {
     addToCart({
       id: product.id,
       name: product.name,
@@ -45,7 +46,7 @@ export default function ProductsPage() {
             </h2>
             {state.filters.query && (
               <Badge variant="secondary">
-                Search: "{state.filters.query}"
+                Search: &ldquo;{state.filters.query}&rdquo;
               </Badge>
             )}
           </div>
@@ -71,7 +72,8 @@ export default function ProductsPage() {
                     <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                       {product.image_url ? (
                         <img 
-                          src={product.image_url} 
+                          //src={product.image_url} 
+                          src={`/images/products${product.image_url.replace('.jpg', '.svg')}`}
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />
@@ -167,7 +169,7 @@ export default function ProductsPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
               <p className="text-gray-600 mb-4">
                 {state.filters.query 
-                  ? `No products match your search for "${state.filters.query}"`
+                  ? `No products match your search for &ldquo;${state.filters.query}&rdquo;`
                   : 'No products available at the moment'
                 }
               </p>

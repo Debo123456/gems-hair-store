@@ -48,7 +48,7 @@ export function AdvancedSearch({ className = "", showFilters = false, onToggleFi
   }
 
   const handleSortChange = (sortBy: string) => {
-    setSort({ field: sortBy as any, direction: 'desc' })
+    setSort({ field: sortBy as 'name' | 'price' | 'rating' | 'created_at' | 'review_count', direction: 'desc' })
   }
 
   const handleCategoryChange = (category: string) => {

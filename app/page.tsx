@@ -202,7 +202,7 @@ function ProductCard({ product }: { product: Product }) {
           <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
             {product.image_url ? (
               <img 
-                src={product.image_url} 
+                src={`/images/products${product.image_url.replace('.jpg', '.svg')}`}
                 alt={product.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />

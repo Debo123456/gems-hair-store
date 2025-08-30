@@ -4,8 +4,6 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useRouter } from "next/navigation"
@@ -35,7 +33,7 @@ export default function SignInPage() {
         router.push("/dashboard")
       }
     } catch (err) {
-      setError("An unexpected error occurred")
+      setError("An unexpected error occurred" + err)
     } finally {
       setIsLoading(false)
     }
@@ -140,7 +138,7 @@ export default function SignInPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link 
                   href="/auth/signup"
                   className="font-medium text-blue-600 hover:text-blue-700 hover:underline"

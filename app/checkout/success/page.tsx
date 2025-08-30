@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle, Building2, Mail, Truck, Download, Home, ShoppingBag } from "lucide-react"
+import { CheckCircle, Building2, Truck, Download, Home, ShoppingBag } from "lucide-react"
 import { useSearchParams } from "next/navigation"
+import Link from "next/link"
 
 interface Order {
   orderNumber: string
@@ -113,9 +113,9 @@ Thank you for your order!
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h1>
-          <p className="text-gray-600 mb-4">The order you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The order you are looking for does not exist.</p>
           <Button asChild>
-            <a href="/">Return to Home</a>
+            <Link href="/">Return to Home</Link>
           </Button>
         </div>
       </div>
@@ -133,7 +133,7 @@ Thank you for your order!
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
             <p className="text-gray-600 text-lg">
-              Thank you for your order. We've sent a confirmation email to {order.customer.shipping.email}
+              Thank you for your order. We have sent a confirmation email to {order.customer.shipping.email}
             </p>
           </div>
         </div>
@@ -234,7 +234,7 @@ Thank you for your order!
                   </div>
                   <div>
                     <h4 className="font-medium">Payment Confirmation</h4>
-                    <p className="text-sm text-gray-600">Once payment is received, we'll process and ship your order within 1-2 business days.</p>
+                    <p className="text-sm text-gray-600">Once payment is received, we&apos;ll process and ship your order within 1-2 business days.</p>
                   </div>
                 </div>
                 
@@ -244,7 +244,7 @@ Thank you for your order!
                   </div>
                   <div>
                     <h4 className="font-medium">Order Tracking</h4>
-                    <p className="text-sm text-gray-600">You'll receive tracking information via email once your order ships.</p>
+                    <p className="text-sm text-gray-600">You&apos;ll receive tracking information via email once your order ships.</p>
                   </div>
                 </div>
               </CardContent>
@@ -310,16 +310,16 @@ Thank you for your order!
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
           <Button asChild size="lg">
-            <a href="/">
+            <Link href="/">
               <Home className="h-4 w-4 mr-2" />
               Return to Home
-            </a>
+            </Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <a href="/products">
+            <Link href="/products">
               <ShoppingBag className="h-4 w-4 mr-2" />
               Continue Shopping
-            </a>
+            </Link>
           </Button>
         </div>
       </div>

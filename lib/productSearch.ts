@@ -1,4 +1,12 @@
-import { SearchFilters } from "@/hooks/useSearch"
+// Search filters interface
+export interface SearchFilters {
+  query?: string
+  category?: string
+  priceRange: [number, number]
+  rating: number
+  availability: "in-stock" | "out-of-stock" | "all"
+  sortBy: "price-low" | "price-high" | "rating" | "newest" | "name"
+}
 
 // Enhanced product interface with more details for search
 export interface Product {
@@ -46,8 +54,11 @@ export const products: Product[] = [
     ingredients: ["Argan Oil", "Coconut Oil", "Jojoba Oil", "Vitamin E", "Natural Fragrance"],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-15T00:00:00Z",
-    image: "/products/hair-oil.jpg",
-    images: ["/products/hair-oil-1.jpg", "/products/hair-oil-2.jpg"],
+    image: "/images/products/argan-shampoo.svg",
+    images: [
+      "/images/products/argan-shampoo.svg",
+      "/images/products/argan-shampoo.svg"
+    ],
     isNew: true,
     isFeatured: true,
     isOnSale: true
@@ -69,8 +80,11 @@ export const products: Product[] = [
     ingredients: ["Silk Protein", "Keratin", "Shea Butter", "Argan Oil", "Natural Extracts"],
     createdAt: "2024-01-05T00:00:00Z",
     updatedAt: "2024-01-15T00:00:00Z",
-    image: "/products/hair-mask.jpg",
-    images: ["/products/hair-mask-1.jpg", "/products/hair-mask-2.jpg"],
+    image: "/images/products/hair-mask.svg",
+    images: [
+      "/images/products/hair-mask.svg",
+      "/images/products/hair-mask.svg"
+    ],
     isNew: true,
     isFeatured: true
   },
@@ -91,8 +105,11 @@ export const products: Product[] = [
     ingredients: ["Coconut Oil", "Aloe Vera", "Chamomile", "Natural Surfactants"],
     createdAt: "2023-12-01T00:00:00Z",
     updatedAt: "2024-01-10T00:00:00Z",
-    image: "/products/shampoo.jpg",
-    images: ["/products/shampoo-1.jpg", "/products/shampoo-2.jpg"]
+    image: "/images/products/argan-shampoo.svg",
+    images: [
+      "/images/products/argan-shampoo.svg",
+      "/images/products/argan-shampoo.svg"
+    ]
   },
   {
     id: "4",
@@ -111,8 +128,11 @@ export const products: Product[] = [
     ingredients: ["Water", "Styling Polymers", "Natural Extracts", "Preservatives"],
     createdAt: "2023-11-15T00:00:00Z",
     updatedAt: "2024-01-12T00:00:00Z",
-    image: "/products/mousse.jpg",
-    images: ["/products/mousse-1.jpg", "/products/mousse-2.jpg"]
+    image: "/images/products/styling-gel.svg",
+    images: [
+      "/images/products/styling-gel.svg",
+      "/images/products/styling-gel.svg"
+    ]
   },
   {
     id: "5",
@@ -131,8 +151,11 @@ export const products: Product[] = [
     ingredients: ["Thermal Shield Complex", "Argan Oil", "Vitamin E", "Natural Extracts"],
     createdAt: "2023-10-20T00:00:00Z",
     updatedAt: "2024-01-08T00:00:00Z",
-    image: "/products/heat-protectant.jpg",
-    images: ["/products/heat-protectant-1.jpg", "/products/heat-protectant-2.jpg"]
+    image: "/images/products/anti-frizz-serum.svg",
+    images: [
+      "/images/products/anti-frizz-serum.svg",
+      "/images/products/anti-frizz-serum.svg"
+    ]
   },
   {
     id: "6",
@@ -151,8 +174,11 @@ export const products: Product[] = [
     ingredients: ["Natural Wood", "Natural Bristles"],
     createdAt: "2023-09-01T00:00:00Z",
     updatedAt: "2024-01-05T00:00:00Z",
-    image: "/products/comb.jpg",
-    images: ["/products/comb-1.jpg", "/products/comb-2.jpg"]
+    image: "/images/products/styling-gel.svg",
+    images: [
+      "/images/products/styling-gel.svg",
+      "/images/products/styling-gel.svg"
+    ]
   }
 ]
 

@@ -5,62 +5,62 @@ import { useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Package, Star, ShoppingCart, Heart, Share2 } from "lucide-react"
+import { Package, Star, ShoppingCart, Heart, Share2, ArrowLeft } from "lucide-react"
 import { AdvancedSearch } from "@/components/AdvancedSearch"
 import { useSearch } from "@/hooks/useSearch"
 import { getProductsByCategory, Product } from "@/lib/productSearch"
 import { useCart } from "@/hooks/useCart"
+import Link from "next/link"
 
-// Category metadata
-const categoryMetadata: Record<string, { title: string; description: string; image: string }> = {
-  "shampoo-conditioner": {
-    title: "Shampoo & Conditioner",
+// Category metadata with proper slugs
+const categoryMetadata: Record<string, { title: string; description: string; slug: string }> = {
+  "hair-care": {
+    title: "Hair Care",
     description: "Discover our range of gentle, natural shampoos and conditioners designed for all hair types",
-    image: "/categories/shampoo-conditioner.jpg"
+    slug: "hair-care"
   },
-  "hair-oils-treatments": {
-    title: "Hair Oils & Treatments",
+  "treatment": {
+    title: "Treatment",
     description: "Nourish and repair your hair with our premium oils and intensive treatments",
-    image: "/categories/hair-oils.jpg"
+    slug: "treatment"
   },
-  "styling-products": {
+  "styling": {
     title: "Styling Products",
     description: "Create the perfect look with our professional styling products and tools",
-    image: "/categories/styling.jpg"
+    slug: "styling"
   },
-  "hair-masks": {
-    title: "Hair Masks",
-    description: "Deep conditioning masks for intensive repair and hydration",
-    image: "/categories/masks.jpg"
-  },
-  "tools-accessories": {
+  "tools": {
     title: "Tools & Accessories",
     description: "Professional tools and accessories for perfect hair care and styling",
-    image: "/categories/tools.jpg"
+    slug: "tools"
+  },
+  "accessories": {
+    title: "Accessories",
+    description: "Essential hair care accessories and styling tools",
+    slug: "accessories"
   }
 }
 
 export default function CategoryPage() {
   const params = useParams()
   const category = params.category as string
-  const { setCategory, state } = useSearch()
+  const { setCategory, setSort, clearSearch, state } = useSearch()
   const { addToCart } = useCart()
   const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // Get category info
   const categoryInfo = categoryMetadata[category] || {
-    title: "Category",
-    description: "Browse our products",
-    image: "/categories/default.jpg"
+    title: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
+    description: "Browse our products in this category",
+    slug: category
   }
 
   // Set category in search context
   useEffect(() => {
     if (category) {
-      const categoryName = categoryInfo.title
-      setCategory(categoryName)
+      setCategory(categoryInfo.title)
     }
   }, [category, categoryInfo.title, setCategory])
 
@@ -69,28 +69,93 @@ export default function CategoryPage() {
     if (category) {
       setIsLoading(true)
       try {
-        const categoryProducts = getProductsByCategory(categoryInfo.title)
+        // Map category slug to actual category names in our mock data
+        let categoryName = categoryInfo.title
+        if (category === "hair-care") categoryName = "Hair Oils & Treatments"
+        if (category === "treatment") categoryName = "Hair Masks"
+        if (category === "styling") categoryName = "Styling Products"
+        if (category === "tools") categoryName = "Tools & Accessories"
+        if (category === "accessories") categoryName = "Tools & Accessories"
+        
+        const categoryProducts = getProductsByCategory(categoryName)
         setProducts(categoryProducts)
+        setFilteredProducts(categoryProducts)
       } catch (error) {
         console.error("Failed to load category products:", error)
+        setProducts([])
+        setFilteredProducts([])
       } finally {
         setIsLoading(false)
       }
     }
   }, [category, categoryInfo.title])
 
-  const handleAddToCart = (product: Product, size: string) => {
+  // Filter and sort products based on search state
+  useEffect(() => {
+    if (state.filters.query || state.filters.minPrice || state.filters.maxPrice || state.filters.minRating) {
+      // Apply filters manually since we're using mock data
+      const filtered = products.filter(product => {
+        if (state.filters.query && !product.name.toLowerCase().includes(state.filters.query.toLowerCase())) {
+          return false
+        }
+        if (state.filters.minPrice && product.price < state.filters.minPrice) {
+          return false
+        }
+        if (state.filters.maxPrice && product.price > state.filters.maxPrice) {
+          return false
+        }
+        if (state.filters.minRating && product.rating < state.filters.minRating) {
+          return false
+        }
+        return true
+      })
+      
+      // Apply sorting
+      filtered.sort((a, b) => {
+        switch (state.sort.field) {
+          case 'name':
+            return a.name.localeCompare(b.name)
+          case 'price':
+            return state.sort.direction === 'asc' ? a.price - b.price : b.price - a.price
+          case 'rating':
+            return b.rating - a.rating
+          case 'created_at':
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          default:
+            return 0
+        }
+      })
+      
+      setFilteredProducts(filtered)
+    } else {
+      // Just apply sorting to all products
+      const sorted = [...products].sort((a, b) => {
+        switch (state.sort.field) {
+          case 'name':
+            return a.name.localeCompare(b.name)
+          case 'price':
+            return state.sort.direction === 'asc' ? a.price - b.price : b.price - a.price
+          case 'rating':
+            return b.rating - a.rating
+          case 'created_at':
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          default:
+            return 0
+        }
+      })
+      setFilteredProducts(sorted)
+    }
+  }, [state.filters, state.sort, products])
+
+  const handleAddToCart = (product: Product) => {
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
-      size,
-      quantity: 1
+      image: product.image,
+      quantity: 1,
+      size: "Standard"
     })
-  }
-
-  const formatCategorySlug = (categoryName: string) => {
-    return categoryName.toLowerCase().replace(/[^a-z0-9]+/g, "-")
   }
 
   if (isLoading) {
@@ -109,6 +174,12 @@ export default function CategoryPage() {
       {/* Category Header */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center mb-4">
+            <Link href="/products" className="flex items-center gap-2 text-purple-600 hover:text-purple-700">
+              <ArrowLeft className="h-4 w-4" />
+              Back to All Products
+            </Link>
+          </div>
           <div className="text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Package className="h-10 w-10 text-purple-600" />
@@ -127,7 +198,7 @@ export default function CategoryPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <h2 className="text-2xl font-bold text-gray-900">
-              {products.length} Products
+              {filteredProducts.length} Products
             </h2>
             {state.filters.query && (
               <Badge variant="secondary">
@@ -141,27 +212,34 @@ export default function CategoryPage() {
             <span className="text-sm text-gray-600">Sort by:</span>
             <select 
               className="border rounded-lg px-3 py-2 text-sm"
-              value={state.filters.sortBy}
-              onChange={(e) => state.setSortBy(e.target.value as any)}
+              value={state.sort.field}
+              onChange={(e) => setSort({ field: e.target.value as any, direction: 'asc' })}
             >
               <option value="name">Name (A-Z)</option>
-              <option value="price-low">Price (Low to High)</option>
-              <option value="price-high">Price (High to Low)</option>
+              <option value="price">Price (Low to High)</option>
               <option value="rating">Highest Rated</option>
-              <option value="newest">Newest First</option>
+              <option value="created_at">Newest First</option>
             </select>
           </div>
         </div>
 
         {/* Products Grid */}
-        {products.length > 0 ? (
+        {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-shadow group">
                 <div className="relative">
                   {/* Product Image */}
                   <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                    <span className="text-4xl">🛍️</span>
+                    {product.image ? (
+                      <img 
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <Package className="h-16 w-16 text-gray-400" />
+                    )}
                   </div>
                   
                   {/* Badges */}
@@ -246,7 +324,7 @@ export default function CategoryPage() {
                   <Button 
                     className="w-full bg-purple-600 hover:bg-purple-700"
                     disabled={!product.inStock}
-                    onClick={() => handleAddToCart(product, product.sizes[0])}
+                    onClick={() => handleAddToCart(product)}
                   >
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     {product.inStock ? "Add to Cart" : "Out of Stock"}
@@ -267,7 +345,7 @@ export default function CategoryPage() {
                   : "No products available in this category"
                 }
               </p>
-              <Button onClick={() => state.clearSearch()}>
+              <Button onClick={() => clearSearch()}>
                 Clear Search
               </Button>
             </CardContent>
@@ -279,19 +357,17 @@ export default function CategoryPage() {
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Explore Other Categories</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(categoryMetadata).map(([slug, info]) => (
-              <Card 
-                key={slug} 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => window.location.href = `/categories/${slug}`}
-              >
-                <CardContent className="p-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center mb-4">
-                    <Package className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <h4 className="font-semibold text-gray-900 mb-2">{info.title}</h4>
-                  <p className="text-sm text-gray-600">{info.description}</p>
-                </CardContent>
-              </Card>
+              <Link key={slug} href={`/categories/${slug}`}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardContent className="p-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center mb-4">
+                      <Package className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">{info.title}</h4>
+                    <p className="text-sm text-gray-600">{info.description}</p>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>

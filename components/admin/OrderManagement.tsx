@@ -306,7 +306,7 @@ export function OrderManagement() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <Badge variant={getStatusColor(order.status) as any} className="flex items-center gap-1 w-fit">
+                      <Badge variant={getStatusColor(order.status) as "default" | "destructive" | "secondary" | "outline"} className="flex items-center gap-1 w-fit">
                         {getStatusIcon(order.status)}
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                       </Badge>
@@ -316,7 +316,7 @@ export function OrderManagement() {
                     </td>
                     <td className="p-4">
                       <div className="space-y-1">
-                        <Badge variant={getPaymentStatusColor(order.paymentStatus) as any}>
+                        <Badge variant={getPaymentStatusColor(order.paymentStatus) as "default" | "destructive" | "secondary" | "outline"}>
                           {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
                         </Badge>
                         <div className="text-sm text-gray-600">{order.paymentMethod}</div>

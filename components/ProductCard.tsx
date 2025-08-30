@@ -118,8 +118,32 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
     >
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-gray-100">
-        <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-          <Package className="h-16 w-16 text-gray-400" />
+        {product.image ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            onError={(e) => {
+              // Fallback to placeholder if image fails to load
+              const target = e.target as HTMLImageElement
+              target.style.display = 'none'
+              const fallback = target.parentElement?.querySelector('.image-fallback') as HTMLElement
+              if (fallback) fallback.style.display = 'flex'
+            }}
+          />
+        ) : null}
+        
+        {/* Fallback placeholder */}
+        <div className={`image-fallback w-full h-full ${product.image ? 'hidden' : ''}`}>
+          <Image
+            src="/images/products/argan-shampoo.svg"
+            alt="Default product image"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          />
         </div>
         
         {/* Quick Actions Overlay */}
@@ -155,13 +179,13 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           </div>
         )}
 
-        {/* Sale Badge */}
-        {product.originalPrice > product.price && (
+                {/* Sale Badge */}
+        {product.originalPrice && product.originalPrice > product.price && (
           <div className="absolute top-2 right-2">
             <Badge variant="default" className="bg-red-500 text-white text-xs">
               Sale
             </Badge>
-          </div>
+            </div>
         )}
 
         {/* Swipe Indicator */}
@@ -207,7 +231,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             <span className="text-2xl font-bold text-gray-900">
               ${product.price}
             </span>
-            {product.originalPrice > product.price && (
+            {product.originalPrice && product.originalPrice > product.price && (
               <span className="text-sm text-gray-500 line-through">
                 ${product.originalPrice}
               </span>

@@ -8,11 +8,11 @@ import { Product } from '@/lib/productSearch'
 interface WishlistContextType {
   items: WishlistItem[]
   loading: boolean
-  addToWishlist: (productId: string) => Promise<{ error: any }>
-  removeFromWishlist: (productId: string) => Promise<{ error: any }>
+  addToWishlist: (productId: string) => Promise<{ error: Error | null }>
+  removeFromWishlist: (productId: string) => Promise<{ error: Error | null }>
   isInWishlist: (productId: string) => boolean
   getWishlistProducts: () => Product[]
-  clearWishlist: () => Promise<{ error: any }>
+  clearWishlist: () => Promise<{ error: Error | null }>
 }
 
 const WishlistContext = createContext<WishlistContextType | null>(null)
@@ -72,7 +72,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       await loadWishlist()
       return { error: null }
     } catch (error) {
-      return { error }
+      return { error: error instanceof Error ? error : new Error(String(error)) }
     }
   }
 
@@ -91,7 +91,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       await loadWishlist()
       return { error: null }
     } catch (error) {
-      return { error }
+      return { error: error instanceof Error ? error : new Error(String(error)) }
     }
   }
 
@@ -119,7 +119,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       setItems([])
       return { error: null }
     } catch (error) {
-      return { error }
+      return { error: error instanceof Error ? error : new Error(String(error)) }
     }
   }
 

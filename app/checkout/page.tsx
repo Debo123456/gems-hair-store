@@ -66,7 +66,7 @@ export default function CheckoutPage() {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev as any)[parent],
+          ...prev[parent as keyof CheckoutFormData] as Record<string, string>,
           [child]: value
         }
       }))
@@ -424,7 +424,10 @@ export default function CheckoutPage() {
                         <p className="text-sm">
                           {formData.shippingAddress.addressLine1}
                           {formData.shippingAddress.addressLine2 && (
-                            <br />{formData.shippingAddress.addressLine2}
+                            <>
+                              <br />
+                              {formData.shippingAddress.addressLine2}
+                            </>
                           )}
                         </p>
                         <p className="text-sm">

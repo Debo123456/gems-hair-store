@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Search, Package, Truck, CheckCircle, Clock, AlertCircle } from "lucide-react"
+import Link from "next/link"
 
 interface OrderStatus {
   orderNumber: string
@@ -304,7 +305,7 @@ export default function OrderTrackingPage() {
           <CardHeader>
             <CardTitle>Need Help?</CardTitle>
             <CardDescription>
-              Can't find your order or have questions about your order status?
+              Can&apos;t find your order or have questions about your order status?
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -315,9 +316,9 @@ export default function OrderTrackingPage() {
                 </a>
               </Button>
               <Button variant="outline" className="w-full" asChild>
-                <a href="/products">
+                <Link href="/products">
                   Continue Shopping
-                </a>
+                </Link>
               </Button>
             </div>
           </CardContent>
