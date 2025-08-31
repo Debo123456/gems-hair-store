@@ -121,7 +121,7 @@ const Header = () => {
                       <div className="space-y-4">
                         <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src="/avatar.jpg" alt={profile?.full_name} />
+                            <AvatarImage src="/avatar.jpg" alt={profile?.full_name || undefined} />
                             <AvatarFallback>{profile?.full_name?.charAt(0) || "U"}</AvatarFallback>
                           </Avatar>
                           <div>
@@ -235,7 +235,7 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="hidden md:flex touch-manipulation">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/avatar.jpg" alt={profile?.full_name} />
+                      <AvatarImage src="/avatar.jpg" alt={profile?.full_name || undefined} />
                       <AvatarFallback>{profile?.full_name?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
                   </Button>
