@@ -81,7 +81,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {profile.full_name}!</p>
+              <p className="text-gray-600">Welcome back, {profile?.full_name || 'User'}!</p>
             </div>
             <Button 
               variant="outline" 
@@ -134,15 +134,15 @@ export default function DashboardPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Name:</span>
-                      <span className="font-medium">{profile.full_name}</span>
+                      <span className="font-medium">{profile?.full_name || "Not set"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Email:</span>
-                      <span className="font-medium">{profile.email}</span>
+                      <span className="font-medium">{profile?.email || "Not set"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Phone:</span>
-                      <span className="font-medium">{profile.phone || "Not set"}</span>
+                      <span className="font-medium">{profile?.phone || "Not set"}</span>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="w-full mt-4">
@@ -404,7 +404,7 @@ export default function DashboardPage() {
                         </label>
                         <input
                           type="text"
-                          value={profile.full_name}
+                          value={profile?.full_name || ""}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                           readOnly
                         />
@@ -415,7 +415,7 @@ export default function DashboardPage() {
                         </label>
                         <input
                           type="email"
-                          value={profile.email}
+                          value={profile?.email || ""}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                           readOnly
                         />
