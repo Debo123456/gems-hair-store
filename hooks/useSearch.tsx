@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useReducer, useEffect, ReactNode, useState } from "react"
+import { createContext, useContext, useReducer, useEffect, ReactNode, useState, useCallback } from "react"
 import { ProductService, ProductFilters, ProductSort } from "@/lib/productService"
 import { Product, ProductCategory } from "@/lib/supabase"
 
@@ -187,29 +187,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(searchReducer, initialState)
   const [debouncedQuery, setDebouncedQuery] = useState("")
 
-  // Load categories on mount
-  useEffect(() => {
-    loadCategories()
-  }, [])
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(state.filters.query || "")
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [state.filters.query])
-
-  // Search products when filters change
-  useEffect(() => {
-    if (debouncedQuery !== undefined) {
-      searchProducts()
-    }
-  }, [debouncedQuery, state.filters.category, state.filters.minPrice, state.filters.maxPrice, state.filters.minRating, state.filters.inStock, state.filters.isNew, state.filters.isFeatured, state.filters.isOnSale, state.sort])
-
   // Load categories
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const categories = await ProductService.getCategories()
       dispatch({ type: 'SET_CATEGORIES', payload: categories })
@@ -217,10 +196,10 @@ export function SearchProvider({ children }: { children: ReactNode }) {
       console.error('Failed to load categories:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load categories' })
     }
-  }
+  }, [])
 
   // Search products
-  const searchProducts = async () => {
+  const searchProducts = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true })
     dispatch({ type: 'SET_ERROR', payload: null })
     
@@ -241,10 +220,31 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
-  }
+  }, [state.filters, state.sort, state.currentPage])
+
+  // Load categories on mount
+  useEffect(() => {
+    loadCategories()
+  }, [loadCategories])
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(state.filters.query || "")
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [state.filters.query])
+
+  // Search products when filters change
+  useEffect(() => {
+    if (debouncedQuery !== undefined) {
+      searchProducts()
+    }
+  }, [debouncedQuery, searchProducts])
 
   // Load more products (pagination)
-  const loadMoreProducts = async () => {
+  const loadMoreProducts = useCallback(async () => {
     if (state.loading || !state.hasMore) return
 
     dispatch({ type: 'SET_LOADING', payload: true })
@@ -267,56 +267,56 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
-  }
+  }, [state.loading, state.hasMore, state.filters, state.sort, state.currentPage])
 
   // Action handlers
-  const setQuery = (query: string) => {
+  const setQuery = useCallback((query: string) => {
     dispatch({ type: 'SET_QUERY', payload: query })
-  }
+  }, [])
 
-  const setCategory = (category: string) => {
+  const setCategory = useCallback((category: string) => {
     dispatch({ type: 'SET_CATEGORY', payload: category })
-  }
+  }, [])
 
-  const setPriceRange = (min: number, max: number) => {
+  const setPriceRange = useCallback((min: number, max: number) => {
     dispatch({ type: 'SET_PRICE_RANGE', payload: { min, max } })
-  }
+  }, [])
 
-  const setMinRating = (rating: number) => {
+  const setMinRating = useCallback((rating: number) => {
     dispatch({ type: 'SET_MIN_RATING', payload: rating })
-  }
+  }, [])
 
-  const setInStock = (inStock: boolean) => {
+  const setInStock = useCallback((inStock: boolean) => {
     dispatch({ type: 'SET_IN_STOCK', payload: inStock })
-  }
+  }, [])
 
-  const setIsNew = (isNew: boolean) => {
+  const setIsNew = useCallback((isNew: boolean) => {
     dispatch({ type: 'SET_IS_NEW', payload: isNew })
-  }
+  }, [])
 
-  const setIsFeatured = (isFeatured: boolean) => {
+  const setIsFeatured = useCallback((isFeatured: boolean) => {
     dispatch({ type: 'SET_IS_FEATURED', payload: isFeatured })
-  }
+  }, [])
 
-  const setIsOnSale = (isOnSale: boolean) => {
+  const setIsOnSale = useCallback((isOnSale: boolean) => {
     dispatch({ type: 'SET_IS_ON_SALE', payload: isOnSale })
-  }
+  }, [])
 
-  const setSort = (sort: ProductSort) => {
+  const setSort = useCallback((sort: ProductSort) => {
     dispatch({ type: 'SET_SORT', payload: sort })
-  }
+  }, [])
 
-  const setCurrentPage = (page: number) => {
+  const setCurrentPage = useCallback((page: number) => {
     dispatch({ type: 'SET_CURRENT_PAGE', payload: page })
-  }
+  }, [])
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     dispatch({ type: 'RESET_FILTERS' })
-  }
+  }, [])
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     dispatch({ type: 'CLEAR_SEARCH' })
-  }
+  }, [])
 
   return (
     <SearchContext.Provider

@@ -57,12 +57,12 @@ export default function CategoryPage() {
     slug: category
   }
 
-  // Set category in search context
+  // Set category in search context only when category param changes
   useEffect(() => {
     if (category) {
       setCategory(categoryInfo.title)
     }
-  }, [category, categoryInfo.title, setCategory])
+  }, [category, setCategory]) // Remove categoryInfo.title from dependencies
 
   // Load products for this category
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function CategoryPage() {
         setIsLoading(false)
       }
     }
-  }, [category, categoryInfo.title])
+  }, [category]) // Remove categoryInfo.title from dependencies
 
   // Filter and sort products based on search state
   useEffect(() => {

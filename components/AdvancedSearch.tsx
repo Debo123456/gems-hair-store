@@ -48,11 +48,15 @@ export function AdvancedSearch({ className = "", showFilters = false, onToggleFi
   }
 
   const handleSortChange = (sortBy: string) => {
-    setSort({ field: sortBy as 'name' | 'price' | 'rating' | 'created_at' | 'review_count', direction: 'desc' })
+    if (sortBy !== state.sort.field) {
+      setSort({ field: sortBy as 'name' | 'price' | 'rating' | 'created_at' | 'review_count', direction: 'asc' })
+    }
   }
 
   const handleCategoryChange = (category: string) => {
-    setCategory(category)
+    if (category !== state.filters.category) {
+      setCategory(category)
+    }
   }
 
   const toggleFilters = () => {
