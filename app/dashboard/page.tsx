@@ -138,7 +138,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Email:</span>
-                      <span className="font-medium">{profile?.email || "Not set"}</span>
+                      <span className="font-medium">{user?.email || "Not set"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Phone:</span>
@@ -415,7 +415,7 @@ export default function DashboardPage() {
                         </label>
                         <input
                           type="email"
-                          value={profile?.email || ""}
+                          value={user?.email || ""}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                           readOnly
                         />
