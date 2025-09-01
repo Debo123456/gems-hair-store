@@ -173,7 +173,7 @@ export default function CategoryPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Category Header */}
       <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-12">
           <div className="flex items-center justify-center mb-4">
             <Link href="/products" className="flex items-center gap-2 text-purple-600 hover:text-purple-700">
               <ArrowLeft className="h-4 w-4" />
@@ -181,23 +181,23 @@ export default function CategoryPage() {
             </Link>
           </div>
           <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="h-10 w-10 text-purple-600" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">{categoryInfo.title}</h1>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">{categoryInfo.description}</p>
+                         <div className="w-24 h-24 bg-gradient-to-br from-purple-100 via-pink-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+               <Package className="h-12 w-12 text-purple-600" />
+             </div>
+            <h1 className="text-5xl font-bold text-gray-900 mb-4 font-heading">{categoryInfo.title}</h1>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">{categoryInfo.description}</p>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Search and Filters */}
-        <AdvancedSearch className="mb-8" showFilters={true} />
+             <div className="container mx-auto px-4 py-12">
+         {/* Search and Filters */}
+         <AdvancedSearch className="mb-12" showFilters={true} />
 
-        {/* Results Summary */}
-        <div className="flex items-center justify-between mb-6">
+                 {/* Results Summary */}
+         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-3xl font-bold text-gray-900 font-heading">
               {filteredProducts.length} Products
             </h2>
             {state.filters.query && (
@@ -223,14 +223,14 @@ export default function CategoryPage() {
           </div>
         </div>
 
-        {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                 {/* Products Grid */}
+         {filteredProducts.length > 0 ? (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-shadow group">
+              <Card key={product.id} className="overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 group bg-white rounded-xl shadow-md hover:scale-105 hover:-translate-y-1">
                 <div className="relative">
                   {/* Product Image */}
-                  <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <div className="aspect-square bg-white flex items-center justify-center">
                     {product.image ? (
                       <img 
                         src={product.image}
@@ -248,7 +248,9 @@ export default function CategoryPage() {
                       <Badge className="bg-green-500 text-white text-xs">New</Badge>
                     )}
                     {product.isOnSale && (
-                      <Badge className="bg-red-500 text-white text-xs">Sale</Badge>
+                      <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm">
+                        SALE
+                      </Badge>
                     )}
                     {!product.inStock && (
                       <Badge variant="secondary" className="text-xs">Out of Stock</Badge>
@@ -266,80 +268,109 @@ export default function CategoryPage() {
                   </div>
                 </div>
 
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
-                  <CardDescription className="line-clamp-2">{product.description}</CardDescription>
+                <CardHeader className="pb-2 text-left">
+                  <div className="flex items-start gap-2">
+                    <CardTitle className="text-sm font-semibold line-clamp-2 leading-tight font-heading text-left flex-1">{product.name}</CardTitle>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {product.isOnSale && (
+                        <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">🔥</span>
+                      )}
+                      {product.rating >= 4.5 && (
+                        <span className="text-xs bg-yellow-100 text-yellow-600 px-1.5 py-0.5 rounded-full">⭐</span>
+                      )}
+                    </div>
+                  </div>
                 </CardHeader>
 
-                <CardContent className="pt-0">
-                  {/* Rating */}
+                <CardContent className="pt-0 text-left">
+                  {/* Price - Always Visible */}
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`h-4 w-4 ${
-                            star <= product.rating
-                              ? "text-yellow-400 fill-current"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-600">({product.reviewCount})</span>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xl font-bold text-purple-600">
+                    <span className="text-base font-bold text-purple-600">
                       ${product.price}
                     </span>
                     {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="text-sm text-gray-500 line-through">
+                      <span className="text-xs text-gray-500 line-through">
                         ${product.originalPrice}
                       </span>
                     )}
                   </div>
 
-                  {/* Size Selection */}
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Size
-                    </label>
-                    <div className="flex gap-2">
-                      {product.sizes.map((size) => (
-                        <Button
-                          key={size}
-                          variant="outline"
-                          size="sm"
-                          className="text-xs"
-                        >
-                          {size}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                                                           {/* Always Visible - Condensed Info */}
+                      <div className="mb-3">
+                        {/* Rating - Always Visible */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-3 w-3 ${
+                                  star <= product.rating
+                                    ? "text-yellow-400/80 fill-current"
+                                    : "text-gray-200"
+                                  }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-500">({product.reviewCount})</span>
+                        </div>
 
-                  {/* Add to Cart */}
-                  <Button 
-                    className="w-full bg-purple-600 hover:bg-purple-700"
-                    disabled={!product.inStock}
-                    onClick={() => handleAddToCart(product)}
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    {product.inStock ? "Add to Cart" : "Out of Stock"}
-                  </Button>
+                        {/* Description - Always Visible (Condensed) */}
+                        {product.description && (
+                          <p className="text-xs text-gray-500 line-clamp-1 mb-2 leading-relaxed">
+                            {product.description}
+                          </p>
+                        )}
+
+                        {/* Size Selection - Always Visible (Condensed) */}
+                        <div className="mb-2">
+                          <div className="flex gap-1 flex-wrap">
+                            {product.sizes.slice(0, 3).map((size) => (
+                              <span
+                                key={size}
+                                className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded border"
+                              >
+                                {size}
+                              </span>
+                            ))}
+                            {product.sizes.length > 3 && (
+                              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded border">
+                                +{product.sizes.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons - Always Visible */}
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 text-xs border-gray-300 hover:border-purple-500 hover:text-purple-600"
+                        >
+                          Quick View
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
+                          disabled={!product.inStock}
+                          onClick={() => handleAddToCart(product)}
+                        >
+                          <ShoppingCart className="h-3 w-3 mr-1" />
+                          {product.inStock ? "Add to Cart" : "Out of Stock"}
+                        </Button>
+                      </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
           /* No Results */
-          <Card className="text-center py-12">
+          <Card className="text-center py-12 border border-gray-200 bg-white rounded-xl shadow-md">
             <CardContent>
               <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 font-heading">No products found</h3>
+              <p className="text-gray-600 mb-4 leading-relaxed">
                 {state.filters.query 
                   ? `No products match your search for &ldquo;${state.filters.query}&rdquo;`
                   : "No products available in this category"
@@ -352,19 +383,19 @@ export default function CategoryPage() {
           </Card>
         )}
 
-        {/* Related Categories */}
-        <div className="mt-16">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">Explore Other Categories</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(categoryMetadata).map(([slug, info]) => (
-              <Link key={slug} href={`/categories/${slug}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center mb-4">
-                      <Package className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">{info.title}</h4>
-                    <p className="text-sm text-gray-600">{info.description}</p>
+                 {/* Related Categories */}
+         <div className="mt-24">
+           <h3 className="text-3xl font-bold text-gray-900 mb-8 font-heading">Explore Other Categories</h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+             {Object.entries(categoryMetadata).map(([slug, info]) => (
+               <Link key={slug} href={`/categories/${slug}`}>
+                 <Card className="border border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer bg-white rounded-xl shadow-md hover:scale-105 hover:-translate-y-1">
+                   <CardContent className="p-6">
+                     <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                       <Package className="h-7 w-7 text-purple-600" />
+                     </div>
+                    <h4 className="font-semibold text-gray-900 mb-2 font-heading">{info.title}</h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">{info.description}</p>
                   </CardContent>
                 </Card>
               </Link>
