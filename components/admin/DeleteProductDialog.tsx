@@ -1,0 +1,89 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertTriangle, Trash2 } from "lucide-react"
+import { AdminProductService } from "@/lib/adminProductService"
+
+interface DeleteProductDialogProps {
+  product: { id: string; name: string } | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onProductDeleted?: () => void
+}
+
+export function DeleteProductDialog({ product, open, onOpenChange, onProductDeleted }: DeleteProductDialogProps) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleDelete = async () => {
+    if (!product) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      await AdminProductService.deleteProduct(product.id)
+      onOpenChange(false)
+      onProductDeleted?.()
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      setError(error instanceof Error ? error.message : 'Failed to delete product')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClose = () => {
+    onOpenChange(false)
+    setError(null)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-red-600">
+            <AlertTriangle className="h-5 w-5" />
+            Delete Product
+          </DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete <strong>&ldquo;{product?.name}&rdquo;</strong>? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-700">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button 
+            type="button" 
+            variant="destructive" 
+            onClick={handleDelete} 
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Product
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

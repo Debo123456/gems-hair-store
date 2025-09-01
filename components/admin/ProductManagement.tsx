@@ -8,84 +8,55 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Search, Filter, Edit, Trash2, Eye, Package, Tag } from "lucide-react"
+import { Plus, Search, Filter, Edit, Trash2, Eye, Package, Tag, RefreshCw, AlertCircle } from "lucide-react"
 import { Product } from "@/lib/productSearch"
+import { AddProductModal } from "./AddProductModal"
+import { EditProductModal } from "./EditProductModal"
+import { ViewProductModal } from "./ViewProductModal"
+import { DeleteProductDialog } from "./DeleteProductDialog"
+import { BulkDeleteDialog } from "./BulkDeleteDialog"
+import { useAdminProducts } from "@/hooks/useAdminProducts"
+import { AdminProduct } from "@/lib/adminProductService"
 
 export function ProductManagement() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null)
+  const [viewingProduct, setViewingProduct] = useState<AdminProduct | null>(null)
+  const [deletingProduct, setDeletingProduct] = useState<{ id: string; name: string } | null>(null)
+  const [showBulkDelete, setShowBulkDelete] = useState(false)
 
-  // Mock products data - in a real app, this would come from Supabase
-  const mockProducts: Product[] = [
-    {
-      id: "1",
-      name: "Nourishing Hair Mask",
-      description: "Deep conditioning treatment for damaged hair",
-      price: 24.99,
-      originalPrice: 29.99,
-      category: "Treatments",
-      rating: 4.8,
-      reviewCount: 156,
-      image: "/products/hair-mask.jpg",
-      inStock: true,
-      stockQuantity: 45,
-      sizes: ["250ml", "500ml"],
-      features: ["Deep conditioning", "Repair", "Moisturizing"],
-      tags: ["deep conditioning", "damaged hair", "repair"],
-      createdAt: "2024-01-01T00:00:00Z",
-      updatedAt: "2024-01-15T00:00:00Z",
-      images: ["/products/hair-mask.jpg"]
-    },
-    {
-      id: "2",
-      name: "Volumizing Shampoo",
-      description: "Adds volume and body to fine hair",
-      price: 18.99,
-      originalPrice: 18.99,
-      category: "Shampoo",
-      rating: 4.6,
-      reviewCount: 89,
-      image: "/products/volumizing-shampoo.jpg",
-      inStock: true,
-      stockQuantity: 32,
-      sizes: ["250ml", "500ml"],
-      features: ["Volume", "Body", "Fine hair"],
-      tags: ["volume", "fine hair", "body"],
-      createdAt: "2024-01-01T00:00:00Z",
-      updatedAt: "2024-01-15T00:00:00Z",
-      images: ["/products/volumizing-shampoo.jpg"]
-    },
-    {
-      id: "3",
-      name: "Heat Protection Spray",
-      description: "Protects hair from heat damage up to 450°F",
-      price: 22.99,
-      originalPrice: 22.99,
-      category: "Styling",
-      rating: 4.9,
-      reviewCount: 203,
-      image: "/products/heat-protection.jpg",
-      inStock: false,
-      stockQuantity: 0,
-      sizes: ["150ml", "300ml"],
-      features: ["Heat protection", "Styling", "Damage prevention"],
-      tags: ["heat protection", "styling", "damage prevention"],
-      createdAt: "2024-01-01T00:00:00Z",
-      updatedAt: "2024-01-15T00:00:00Z",
-      images: ["/products/heat-protection.jpg"]
-    }
-  ]
-
-  const categories = ["all", "Shampoo", "Conditioner", "Treatments", "Styling", "Tools"]
-
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
-    return matchesSearch && matchesCategory
+  const {
+    products,
+    loading,
+    error,
+    total,
+    page,
+    totalPages,
+    refresh,
+    deleteProduct,
+    deleteProducts,
+    updateOptions
+  } = useAdminProducts({
+    limit: 20,
+    sortBy: 'created_at',
+    sortOrder: 'desc'
   })
+
+  const categories = ["all", "Hair Care", "Treatment", "Styling", "Tools", "Accessories"]
+
+  // Update search and category filters
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    updateOptions({ search: value || undefined, page: 1 })
+  }
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value)
+    updateOptions({ category: value === "all" ? undefined : value, page: 1 })
+  }
 
   const handleSelectProduct = (productId: string) => {
     setSelectedProducts(prev => 
@@ -96,22 +67,52 @@ export function ProductManagement() {
   }
 
   const handleSelectAll = () => {
-    if (selectedProducts.length === filteredProducts.length) {
+    if (selectedProducts.length === products.length) {
       setSelectedProducts([])
     } else {
-      setSelectedProducts(filteredProducts.map(p => p.id))
+      setSelectedProducts(products.map(p => p.id))
     }
   }
 
   const handleBulkDelete = () => {
-    // In a real app, this would call Supabase to delete products
-    console.log("Deleting products:", selectedProducts)
-    setSelectedProducts([])
+    setShowBulkDelete(true)
   }
 
-  const getStockStatus = (product: Product) => {
-    if (!product.inStock) return { label: "Out of Stock", color: "destructive" }
-    if (product.stockQuantity < 10) return { label: "Low Stock", color: "warning" }
+  const handleBulkDeleteConfirm = async () => {
+    try {
+      await deleteProducts(selectedProducts)
+      setSelectedProducts([])
+      setShowBulkDelete(false)
+    } catch (error) {
+      console.error("Failed to delete products:", error)
+    }
+  }
+
+  const handleEditProduct = (product: AdminProduct) => {
+    setEditingProduct(product)
+  }
+
+  const handleViewProduct = (product: AdminProduct) => {
+    setViewingProduct(product)
+  }
+
+  const handleDeleteProduct = (product: AdminProduct) => {
+    setDeletingProduct({ id: product.id, name: product.name })
+  }
+
+  const handleProductUpdated = () => {
+    setEditingProduct(null)
+    refresh()
+  }
+
+  const handleProductDeleted = () => {
+    setDeletingProduct(null)
+    refresh()
+  }
+
+  const getStockStatus = (product: AdminProduct) => {
+    if (!product.in_stock) return { label: "Out of Stock", color: "destructive" }
+    if (product.stock_quantity < 10) return { label: "Low Stock", color: "warning" }
     return { label: "In Stock", color: "default" }
   }
 
@@ -123,10 +124,13 @@ export function ProductManagement() {
           <h2 className="text-2xl font-bold">Product Management</h2>
           <p className="text-gray-600">Manage your product catalog</p>
         </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <AddProductModal onProductAdded={refresh} />
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -144,11 +148,11 @@ export function ProductManagement() {
               <Input
                 placeholder="Search products..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -203,11 +207,40 @@ export function ProductManagement() {
         </Card>
       )}
 
+      {/* Error Display */}
+      {error && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-4 w-4" />
+              <span>{error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Products Grid/List */}
       <div className="space-y-4">
-        {viewMode === "grid" ? (
+        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map(product => (
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader className="pb-3">
+                  <div className="aspect-square bg-gray-200 rounded-lg mb-3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : viewMode === "grid" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map(product => (
               <Card key={product.id} className="relative">
                 <div className="absolute top-4 left-4">
                   <Checkbox
@@ -217,7 +250,15 @@ export function ProductManagement() {
                 </div>
                 <CardHeader className="pb-3">
                   <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                    <Package className="h-12 w-12 text-gray-400" />
+                    {product.image_url ? (
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <Package className="h-12 w-12 text-gray-400" />
+                    )}
                   </div>
                   <CardTitle className="text-lg">{product.name}</CardTitle>
                   <CardDescription className="line-clamp-2">
@@ -227,9 +268,9 @@ export function ProductManagement() {
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold">${product.price}</span>
-                    {product.originalPrice && product.originalPrice > product.price && (
+                    {product.original_price && product.original_price > product.price && (
                       <span className="text-sm text-gray-500 line-through">
-                        ${product.originalPrice}
+                        ${product.original_price}
                       </span>
                     )}
                   </div>
@@ -242,18 +283,35 @@ export function ProductManagement() {
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span>⭐ {product.rating}</span>
                     <span>•</span>
-                    <span>{product.reviewCount} reviews</span>
+                    <span>{product.review_count} reviews</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>Stock: {product.stock_quantity}</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleEditProduct(product)}
+                    >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleViewProduct(product)}
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       View
                     </Button>
-                    <Button variant="destructive" size="sm">
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => handleDeleteProduct(product)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -270,7 +328,7 @@ export function ProductManagement() {
                     <tr className="border-b">
                       <th className="text-left p-4">
                         <Checkbox
-                          checked={selectedProducts.length === filteredProducts.length}
+                          checked={selectedProducts.length === products.length}
                           onCheckedChange={handleSelectAll}
                         />
                       </th>
@@ -283,7 +341,7 @@ export function ProductManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredProducts.map(product => (
+                    {products.map((product: AdminProduct) => (
                       <tr key={product.id} className="border-b">
                         <td className="p-4">
                           <Checkbox
@@ -294,7 +352,15 @@ export function ProductManagement() {
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                              <Package className="h-6 w-6 text-gray-400" />
+                              {product.image_url ? (
+                                <img 
+                                  src={product.image_url} 
+                                  alt={product.name}
+                                  className="w-full h-full object-cover rounded"
+                                />
+                              ) : (
+                                <Package className="h-6 w-6 text-gray-400" />
+                              )}
                             </div>
                             <div>
                               <div className="font-medium">{product.name}</div>
@@ -309,9 +375,9 @@ export function ProductManagement() {
                         </td>
                         <td className="p-4">
                           <div className="font-medium">${product.price}</div>
-                          {product.originalPrice && product.originalPrice > product.price && (
+                          {product.original_price && product.original_price > product.price && (
                             <div className="text-sm text-gray-500 line-through">
-                              ${product.originalPrice}
+                              ${product.original_price}
                             </div>
                           )}
                         </td>
@@ -320,7 +386,7 @@ export function ProductManagement() {
                             {getStockStatus(product).label}
                           </Badge>
                           <div className="text-sm text-gray-600 mt-1">
-                            {product.stockQuantity} units
+                            {product.stock_quantity} units
                           </div>
                         </td>
                         <td className="p-4">
@@ -329,18 +395,30 @@ export function ProductManagement() {
                             <span>{product.rating}</span>
                           </div>
                           <div className="text-sm text-gray-600">
-                            {product.reviewCount} reviews
+                            {product.review_count} reviews
                           </div>
                         </td>
                         <td className="p-4">
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditProduct(product)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleViewProduct(product)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="destructive" size="sm">
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => handleDeleteProduct(product)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -358,17 +436,68 @@ export function ProductManagement() {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          Showing {filteredProducts.length} of {mockProducts.length} products
+          Showing {products.length} of {total} products
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            disabled={page === 1}
+            onClick={() => updateOptions({ page: page - 1 })}
+          >
             Previous
           </Button>
-          <Button variant="outline" size="sm" disabled>
+          <span className="text-sm text-gray-600 px-2">
+            Page {page} of {totalPages}
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            disabled={page === totalPages}
+            onClick={() => updateOptions({ page: page + 1 })}
+          >
             Next
           </Button>
         </div>
       </div>
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <EditProductModal
+          product={editingProduct}
+          open={!!editingProduct}
+          onOpenChange={(open) => !open && setEditingProduct(null)}
+          onProductUpdated={handleProductUpdated}
+        />
+      )}
+
+      {/* View Product Modal */}
+      {viewingProduct && (
+        <ViewProductModal
+          product={viewingProduct}
+          open={!!viewingProduct}
+          onOpenChange={(open) => !open && setViewingProduct(null)}
+        />
+      )}
+
+      {/* Delete Product Dialog */}
+      {deletingProduct && (
+        <DeleteProductDialog
+          product={deletingProduct}
+          open={!!deletingProduct}
+          onOpenChange={(open) => !open && setDeletingProduct(null)}
+          onProductDeleted={handleProductDeleted}
+        />
+      )}
+
+      {/* Bulk Delete Dialog */}
+      <BulkDeleteDialog
+        productIds={selectedProducts}
+        productNames={selectedProducts.map(id => products.find(p => p.id === id)?.name || 'Unknown').filter(Boolean)}
+        open={showBulkDelete}
+        onOpenChange={setShowBulkDelete}
+        onProductsDeleted={handleBulkDeleteConfirm}
+      />
     </div>
   )
 }

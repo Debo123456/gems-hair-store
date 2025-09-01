@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -55,8 +55,14 @@ export default function CheckoutPage() {
   })
 
   // Redirect if cart is empty
+  useEffect(() => {
+    if (cartState.items.length === 0) {
+      router.push("/products")
+    }
+  }, [cartState.items.length, router])
+
+  // Don't render if cart is empty
   if (cartState.items.length === 0) {
-    router.push("/products")
     return null
   }
 

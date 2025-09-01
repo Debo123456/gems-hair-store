@@ -24,13 +24,17 @@ import { useAuth } from "@/hooks/useAuth"
 import { useWishlist } from "@/hooks/useWishlist"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { AuthenticatedOnly } from "@/components/ProtectedRoute"
+
+
 
 export default function DashboardPage() {
-  const { user, profile, addresses, signOut } = useAuth()
+  const { user, profile, addresses, signOut, role, isAdmin, loading } = useAuth()
   const { items: wishlistItems } = useWishlist()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("overview")
+
+
 
   // Mock order data - in a real app, this would come from Supabase
   const mockOrders = [
@@ -73,7 +77,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <AuthenticatedOnly fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Please Sign In</h1>
+          <p className="text-gray-600 mb-4">You need to be signed in to access your dashboard.</p>
+          <Button onClick={() => router.push("/auth/signin")}>
+            Sign In
+          </Button>
+        </div>
+      </div>
+    }>
       <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
@@ -82,14 +96,30 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
               <p className="text-gray-600">Welcome back, {profile?.full_name || 'User'}!</p>
+              {isAdmin && (
+                <div className="mt-2">
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                    Admin User
+                  </Badge>
+                </div>
+              )}
             </div>
-            <Button 
-              variant="outline" 
-              onClick={signOut}
-              className="text-red-600 border-red-200 hover:bg-red-50"
-            >
-              Sign Out
-            </Button>
+            <div className="flex gap-2">
+              {isAdmin && (
+                <Button asChild variant="outline">
+                  <Link href="/admin">
+                    Admin Panel
+                  </Link>
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={signOut}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -143,6 +173,12 @@ export default function DashboardPage() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Phone:</span>
                       <span className="font-medium">{profile?.phone || "Not set"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Role:</span>
+                      <Badge variant={isAdmin ? "default" : "secondary"}>
+                        {role || "customer"}
+                      </Badge>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="w-full mt-4">
@@ -467,6 +503,6 @@ export default function DashboardPage() {
         </Tabs>
       </div>
     </div>
-    </ProtectedRoute>
+    </AuthenticatedOnly>
   )
 }

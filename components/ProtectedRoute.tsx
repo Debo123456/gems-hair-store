@@ -1,38 +1,55 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
+import { ReactNode } from "react"
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
-  fallback?: React.ReactNode
+  children: ReactNode
+  requiredRole?: 'admin' | 'customer' | null
+  fallback?: ReactNode
 }
 
-export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
-  const { user, loading } = useAuth()
-  const router = useRouter()
+export const ProtectedRoute = ({ 
+  children, 
+  requiredRole = 'customer',
+  fallback = null 
+}: ProtectedRouteProps) => {
+  const { user, role, loading } = useAuth()
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/auth/signin")
-    }
-  }, [user, loading, router])
-
+  // Show nothing while loading
   if (loading) {
-    return fallback || (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
     return null
   }
 
+  // If no user is logged in, show fallback
+  if (!user) {
+    return <>{fallback}</>
+  }
+
+  // If role is required and user doesn't have it, show fallback
+  if (requiredRole !== null && requiredRole && role !== requiredRole) {
+    return <>{fallback}</>
+  }
+
+  // User has required role (or no role required), show children
   return <>{children}</>
 }
+
+// Convenience components for common use cases
+export const AdminOnly = ({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) => (
+  <ProtectedRoute requiredRole="admin" fallback={fallback}>
+    {children}
+  </ProtectedRoute>
+)
+
+export const CustomerOnly = ({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) => (
+  <ProtectedRoute requiredRole="customer" fallback={fallback}>
+    {children}
+  </ProtectedRoute>
+)
+
+export const AuthenticatedOnly = ({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) => (
+  <ProtectedRoute requiredRole={null} fallback={fallback}>
+    {children}
+  </ProtectedRoute>
+)

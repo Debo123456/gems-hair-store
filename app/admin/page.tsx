@@ -11,7 +11,7 @@ import {
   Calendar, DollarSign, Truck, CheckCircle, TrendingUp, Eye
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { AdminOnly } from "@/components/ProtectedRoute"
 import { ProductManagement } from "@/components/admin/ProductManagement"
 import { OrderManagement } from "@/components/admin/OrderManagement"
 import { CustomerManagement } from "@/components/admin/CustomerManagement"
@@ -32,7 +32,17 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <AdminOnly fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You don&apos;t have permission to access this page.</p>
+          <Button onClick={() => router.push("/")}>
+            Back to Store
+          </Button>
+        </div>
+      </div>
+    }>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white border-b">
@@ -181,6 +191,6 @@ export default function AdminDashboardPage() {
           </Tabs>
         </div>
       </div>
-    </ProtectedRoute>
+    </AdminOnly>
   )
 }

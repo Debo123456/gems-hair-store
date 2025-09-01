@@ -9,6 +9,7 @@ interface AuthState {
   user: User | null
   profile: UserProfile | null
   addresses: UserAddress[]
+  role: 'customer' | 'admin' | null
   loading: boolean
 }
 
@@ -16,7 +17,10 @@ interface AuthContextType {
   user: User | null
   profile: UserProfile | null
   addresses: UserAddress[]
+  role: 'customer' | 'admin' | null
   loading: boolean
+  isAdmin: boolean
+  isCustomer: boolean
   signUp: (email: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
@@ -24,6 +28,7 @@ interface AuthContextType {
   addAddress: (address: Omit<UserAddress, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<{ success: boolean; error?: string }>
   updateAddress: (id: string, updates: Partial<UserAddress>) => Promise<{ success: boolean; error?: string }>
   deleteAddress: (id: string) => Promise<{ success: boolean; error?: string }>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -33,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: null,
     profile: null,
     addresses: [],
+    role: null,
     loading: true
   })
 
@@ -75,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               user: null,
               profile: null,
               addresses: [],
+              role: null,
               loading: false
             })
           }
@@ -91,13 +98,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserProfile = async (userId: string) => {
     try {
+      console.log('Loading user profile for userId:', userId)
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .single()
 
       if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+        
         // Handle case where user profile doesn't exist yet
         if (error.code === 'PGRST116') {
           // No rows returned - user profile doesn't exist yet
@@ -106,12 +122,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await createBasicUserProfile(userId)
           return
         }
+        
+        // Handle other common errors
+        if (error.code === 'PGRST301') {
+          console.error('Table "user_profiles" does not exist or no permission to access it')
+          // Set a default role for now
+          setState(prev => ({ 
+            ...prev, 
+            profile: null,
+            role: 'customer' // Default to customer if table doesn't exist
+          }))
+          return
+        }
+        
         // Log other errors but don't break the flow
         console.warn('Error loading user profile:', error.message || error)
         return
       }
 
-      setState(prev => ({ ...prev, profile: data }))
+      console.log('User profile loaded successfully:', data)
+      setState(prev => ({ 
+        ...prev, 
+        profile: data,
+        role: data.role || 'customer' // Default to customer if role is not set
+      }))
     } catch (error) {
       console.warn('Unexpected error loading user profile:', error)
     }
@@ -124,9 +158,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase
           .from('user_profiles')
           .insert({
-            user_id: userId,
+            id: userId,
             email: user.email || '',
-            full_name: user.user_metadata?.full_name || 'User'
+            full_name: user.user_metadata?.full_name || 'User',
+            role: 'customer' // Default new users to customer role
           })
 
         if (error) {
@@ -188,9 +223,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error: profileError } = await supabase
           .from('user_profiles')
           .insert({
-            user_id: data.user.id,
+            id: data.user.id,
             email: email,
-            full_name: fullName
+            full_name: fullName,
+            role: 'customer' // Default new users to customer role
           })
 
         if (profileError) {
@@ -240,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase
         .from('user_profiles')
         .update(updates)
-        .eq('user_id', state.user.id)
+        .eq('id', state.user.id)
 
       if (error) {
         return { success: false, error: error.message }
@@ -327,17 +363,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const refreshProfile = async () => {
+    if (state.user) {
+      await loadUserProfile(state.user.id)
+    }
+  }
+
+  // Computed values for easier role checking
+  const isAdmin = state.role === 'admin'
+  const isCustomer = state.role === 'customer'
+
   return (
     <AuthContext.Provider
       value={{
         ...state,
+        isAdmin,
+        isCustomer,
         signUp,
         signIn,
         signOut,
         updateProfile,
         addAddress,
         updateAddress,
-        deleteAddress
+        deleteAddress,
+        refreshProfile
       }}
     >
       {children}

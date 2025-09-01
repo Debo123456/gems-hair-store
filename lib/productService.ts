@@ -212,6 +212,30 @@ export class ProductService {
     }
   }
 
+  // Get top rated products
+  static async getTopRatedProducts(limit: number = 8): Promise<Product[]> {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('in_stock', true)
+        .gte('rating', 4.0)
+        .order('rating', { ascending: false })
+        .order('review_count', { ascending: false })
+        .limit(limit)
+
+      if (error) {
+        console.error('Error fetching top rated products:', error)
+        throw error
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('Error in getTopRatedProducts:', error)
+      return []
+    }
+  }
+
   // Get related products (same category, excluding current product)
   static async getRelatedProducts(
     productId: string,

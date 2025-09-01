@@ -2,14 +2,14 @@
 
 import { useState, use, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Star, Heart, Share2, Truck, Shield, RotateCcw, Package, ShoppingCart, Loader2 } from "lucide-react"
+import { Star, Heart, Share2, Truck, Shield, RotateCcw, Package, Loader2 } from "lucide-react"
 import { useCart } from "@/hooks/useCart"
 import { useWishlist } from "@/hooks/useWishlist"
 import { ProductService } from "@/lib/productService"
 import { Product } from "@/lib/supabase"
+import { ProductCard } from "@/components/ProductCard"
 import Link from "next/link"
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -142,8 +142,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="container mx-auto px-6 md:px-8 lg:px-12 py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
           {/* Product Image */}
           <div className="space-y-4">
             <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
@@ -175,10 +176,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Header */}
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-4">
                 {product.is_new && (
                   <Badge className="bg-green-500 hover:bg-green-600">New</Badge>
                 )}
@@ -188,9 +189,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <Badge variant="secondary">{product.category}</Badge>
               </div>
               
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
               
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-4">
                 <div className="flex items-center">
                   {[...Array(5)].map((_, i) => (
                     <Star
@@ -234,8 +235,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {/* Size Selection */}
             {product.sizes && product.sizes.length > 0 && (
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Size</h3>
-                <div className="flex gap-2">
+                <h3 className="font-semibold text-gray-900 mb-4">Size</h3>
+                <div className="flex gap-3">
                   {product.sizes.map((size) => (
                     <Button
                       key={size}
@@ -252,8 +253,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Quantity */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Quantity</h3>
-              <div className="flex items-center gap-3">
+              <h3 className="font-semibold text-gray-900 mb-4">Quantity</h3>
+              <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
                   size="icon"
@@ -302,10 +303,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {/* Features */}
             {product.features && product.features.length > 0 && (
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Key Features</h3>
-                <ul className="space-y-1">
+                <h3 className="font-semibold text-gray-900 mb-4">Key Features</h3>
+                <ul className="space-y-2">
                   {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                    <li key={index} className="flex items-center gap-3 text-sm text-gray-600">
                       <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                       {feature}
                     </li>
@@ -315,19 +316,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             )}
 
             {/* Shipping & Returns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t">
               <div className="text-center">
-                <Truck className="h-6 w-6 mx-auto mb-2 text-purple-600" />
+                <Truck className="h-6 w-6 mx-auto mb-3 text-purple-600" />
                 <p className="text-sm text-gray-600">
                   {product.shipping_info || 'Free shipping on orders over $50'}
                 </p>
               </div>
               <div className="text-center">
-                <Shield className="h-6 w-6 mx-auto mb-2 text-purple-600" />
+                <Shield className="h-6 w-6 mx-auto mb-3 text-purple-600" />
                 <p className="text-sm text-gray-600">Secure payment</p>
               </div>
               <div className="text-center">
-                <RotateCcw className="h-6 w-6 mx-auto mb-2 text-purple-600" />
+                <RotateCcw className="h-6 w-6 mx-auto mb-3 text-purple-600" />
                 <p className="text-sm text-gray-600">
                   {product.return_policy || '30-day money-back guarantee'}
                 </p>
@@ -335,25 +336,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         </div>
+        </div>
 
         {/* Product Details Tabs */}
         {(product.ingredients || product.how_to_use) && (
-          <div className="mt-16">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Product Details</h2>
+          <div className="mt-20">
+            <div className="bg-white rounded-xl shadow-sm p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-8">Product Details</h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 {product.ingredients && (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Ingredients</h3>
-                    <p className="text-gray-600 text-sm">{product.ingredients}</p>
+                    <h3 className="font-semibold text-gray-900 mb-4">Ingredients</h3>
+                    <p className="text-gray-600 leading-relaxed">{product.ingredients}</p>
                   </div>
                 )}
                 
                 {product.how_to_use && (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">How to Use</h3>
-                    <p className="text-gray-600 text-sm">{product.how_to_use}</p>
+                    <h3 className="font-semibold text-gray-900 mb-4">How to Use</h3>
+                    <p className="text-gray-600 leading-relaxed">{product.how_to_use}</p>
                   </div>
                 )}
               </div>
@@ -363,91 +365,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">You Might Also Like</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="mt-20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">You Might Also Like</h2>
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {relatedProducts.map((relatedProduct) => (
-                <Card key={relatedProduct.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                  <div className="relative">
-                    <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                      {relatedProduct.image_url ? (
-                        <img 
-                          src={relatedProduct.image_url} 
-                          alt={relatedProduct.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Package className="h-16 w-16 text-gray-400" />
-                      )}
-                    </div>
-                    
-                    {/* Badges */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                      {relatedProduct.is_new && (
-                        <Badge className="bg-green-500 text-white text-xs">New</Badge>
-                      )}
-                      {relatedProduct.is_on_sale && (
-                        <Badge className="bg-red-500 text-white text-xs">Sale</Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm line-clamp-2">{relatedProduct.name}</CardTitle>
-                    {relatedProduct.description && (
-                      <CardDescription className="text-xs line-clamp-2">{relatedProduct.description}</CardDescription>
-                    )}
-                  </CardHeader>
-
-                  <CardContent className="pt-0">
-                    {/* Rating */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`h-3 w-3 ${
-                              star <= relatedProduct.rating
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs text-gray-600">({relatedProduct.review_count})</span>
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-lg font-bold text-purple-600">
-                        ${relatedProduct.price}
-                      </span>
-                      {relatedProduct.original_price && relatedProduct.original_price > relatedProduct.price && (
-                        <span className="text-sm text-gray-500 line-through">
-                          ${relatedProduct.original_price}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Add to Cart */}
-                    <Button 
-                      size="sm"
-                      className="w-full bg-purple-600 hover:bg-purple-700"
-                      disabled={!relatedProduct.in_stock}
-                      onClick={() => addToCart({
-                        id: relatedProduct.id,
-                        name: relatedProduct.name,
-                        price: relatedProduct.price,
-                        image: relatedProduct.image_url || '',
-                        quantity: 1,
-                        size: relatedProduct.sizes?.[0] || "Standard"
-                      })}
-                    >
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      {relatedProduct.in_stock ? "Add to Cart" : "Out of Stock"}
-                    </Button>
-                  </CardContent>
-                </Card>
+                <ProductCard key={relatedProduct.id} product={relatedProduct} />
               ))}
             </div>
           </div>

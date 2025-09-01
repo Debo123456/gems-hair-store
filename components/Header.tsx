@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Search, Menu, User, Heart, LogOut, LogIn, X, ShoppingBag, User as UserIcon, Settings, Package } from "lucide-react"
 import { Cart } from "./Cart"
 import { useAuth } from "@/hooks/useAuth"
+import { AdminOnly } from "@/components/ProtectedRoute"
 import Link from "next/link"
 
 const Header = () => {
@@ -138,14 +139,16 @@ const Header = () => {
                             <UserIcon className="h-5 w-5 text-purple-600" />
                             <span>Dashboard</span>
                           </Link>
-                          <Link 
-                            href="/admin" 
-                            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                            onClick={closeMobileMenu}
-                          >
-                            <Settings className="h-5 w-5 text-purple-600" />
-                            <span>Admin</span>
-                          </Link>
+                          <AdminOnly>
+                            <Link 
+                              href="/admin" 
+                              className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                              onClick={closeMobileMenu}
+                            >
+                              <Settings className="h-5 w-5 text-purple-600" />
+                              <span>Admin</span>
+                            </Link>
+                          </AdminOnly>
                           <Button 
                             variant="outline" 
                             className="w-full justify-start"
@@ -195,11 +198,11 @@ const Header = () => {
             <Link href="#" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
               Contact
             </Link>
-            {user && (
+            <AdminOnly>
               <Link href="/admin" className="text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors">
                 Admin
               </Link>
-            )}
+            </AdminOnly>
           </nav>
 
           {/* Search Bar - Hidden on mobile when menu is open */}
@@ -255,11 +258,13 @@ const Header = () => {
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard?tab=settings">Settings</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin">Admin Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  <AdminOnly>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin">Admin Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </AdminOnly>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out

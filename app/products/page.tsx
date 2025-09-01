@@ -1,27 +1,124 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Star, Loader2 } from "lucide-react"
-import { AdvancedSearch } from "@/components/AdvancedSearch"
-import { useSearch } from "@/hooks/useSearch"
-import { useCart } from "@/hooks/useCart"
+import { Search, Loader2 } from "lucide-react"
+import { ProductService } from "@/lib/productService"
 import { Product } from "@/lib/supabase"
+import { ProductCard } from "@/components/ProductCard"
+import { ProductFilters } from "@/components/ProductFilters"
+
+// Skeleton Product Card Component
+const ProductCardSkeleton = () => {
+  return (
+    <div className="overflow-hidden border border-gray-200 bg-white rounded-xl shadow-md">
+      <div className="relative">
+        <div className="aspect-[4/3] bg-gray-200 animate-pulse"></div>
+        <div className="absolute top-2 left-2">
+          <div className="w-8 h-4 bg-gray-300 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-5 w-16 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 w-12 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="w-3 h-3 bg-gray-200 rounded animate-pulse"></div>
+            ))}
+          </div>
+          <div className="h-3 w-8 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="h-3 w-16 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    </div>
+  )
+}
+
+interface FilterState {
+  categories: string[]
+  brands: string[]
+  concerns: string[]
+  priceRange: [number, number]
+  minRating: number
+  inStock: boolean
+}
 
 export default function ProductsPage() {
-  const { state, loadMoreProducts, clearSearch } = useSearch()
-  const { addToCart } = useCart()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filters, setFilters] = useState<FilterState>({
+    categories: [],
+    brands: [],
+    concerns: [],
+    priceRange: [0, 200],
+    minRating: 0,
+    inStock: false
+  })
 
-  const handleAddToCart = (product: Product) => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image_url || '',
-      quantity: 1,
-      size: product.sizes?.[0] || "Standard"
-    })
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true)
+        const { products: allProducts } = await ProductService.getProducts()
+        setProducts(allProducts)
+      } catch (error) {
+        console.error('Failed to load products:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProducts()
+  }, [])
+
+  // Filter products based on search and filters
+  const filteredProducts = products.filter(product => {
+    // Search filter
+    if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !product.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false
+    }
+
+    // Category filter
+    if (filters.categories.length > 0 && !filters.categories.includes(product.category)) {
+      return false
+    }
+
+    // Price range filter
+    if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
+      return false
+    }
+
+    // Rating filter
+    if (filters.minRating > 0 && product.rating < filters.minRating) {
+      return false
+    }
+
+    // Stock filter
+    if (filters.inStock && !product.in_stock) {
+      return false
+    }
+
+    return true
+  })
+
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters)
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Search is handled by the filteredProducts logic
   }
 
   return (
@@ -34,175 +131,94 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Search and Filters */}
-        <AdvancedSearch className="mb-8" />
-
-        {/* Results Summary */}
+      <div className="container mx-auto px-6 md:px-8 lg:px-12 py-8">
+        {/* Results Summary and Search */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <h2 className="text-2xl font-bold text-gray-900">
-              {state.totalProducts} Products
+              {filteredProducts.length} Products
             </h2>
-            {state.filters.query && (
+            {searchQuery && (
               <Badge variant="secondary">
-                Search: &ldquo;{state.filters.query}&rdquo;
+                Search: &ldquo;{searchQuery}&rdquo;
               </Badge>
             )}
           </div>
+          
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="max-w-2xl">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </form>
         </div>
 
-        {/* Loading State */}
-        {state.loading && state.products.length === 0 && (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
-              <p className="text-gray-600">Loading products...</p>
-            </div>
+        {/* Main Content */}
+        <div className="xl:flex xl:gap-8">
+          {/* Desktop Filters */}
+          <ProductFilters className="xl:block" onFiltersChange={handleFiltersChange} />
+          
+          {/* Products Grid */}
+          <div className="xl:flex-1">
+            {/* Loading State */}
+            {loading && (
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {[...Array(12)].map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
+              </div>
+            )}
+
+            {/* Products Grid */}
+            {!loading && filteredProducts.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
+
+            {/* No Results */}
+            {!loading && filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
+                <p className="text-gray-600 mb-4">
+                  {searchQuery 
+                    ? `No products match your search for &ldquo;${searchQuery}&rdquo;`
+                    : 'No products available with the current filters'
+                  }
+                </p>
+                {(searchQuery || Object.values(filters).some(v => 
+                  Array.isArray(v) ? v.length > 0 : v !== false && v !== 0
+                )) && (
+                  <Button 
+                    onClick={() => {
+                      setSearchQuery("")
+                      setFilters({
+                        categories: [],
+                        brands: [],
+                        concerns: [],
+                        priceRange: [0, 200],
+                        minRating: 0,
+                        inStock: false
+                      })
+                    }}
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Products Grid */}
-        {state.products.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {state.products.map((product) => (
-              <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-shadow group cursor-pointer">
-                <a href={`/products/${product.id}`} className="block">
-                  <div className="relative">
-                    <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                      {product.image_url ? (
-                        <img 
-                          //src={product.image_url} 
-                          src={`/images/products${product.image_url.replace('.jpg', '.svg')}`}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-4xl">🛍️</span>
-                      )}
-                    </div>
-                    
-                    {/* Badges */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-2">
-                      {product.is_new && (
-                        <Badge className="bg-green-500 hover:bg-green-600">New</Badge>
-                      )}
-                      {product.is_on_sale && (
-                        <Badge className="bg-red-500 hover:bg-red-600">Sale</Badge>
-                      )}
-                      {!product.in_stock && (
-                        <Badge variant="destructive">Out of Stock</Badge>
-                      )}
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          handleAddToCart(product)
-                        }}
-                      >
-                        <Star className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {product.category}
-                      </Badge>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm text-gray-600">{product.rating}</span>
-                        <span className="text-xs text-gray-400">({product.review_count})</span>
-                      </div>
-                    </div>
-                    <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
-                    {product.description && (
-                      <CardDescription className="text-sm text-gray-600 line-clamp-2">
-                        {product.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-
-                  <CardContent className="pt-0">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-purple-600">
-                          ${product.price}
-                        </span>
-                        {product.original_price && product.original_price > product.price && (
-                          <span className="text-sm text-gray-400 line-through">
-                            ${product.original_price}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      className="w-full" 
-                      disabled={!product.in_stock}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        handleAddToCart(product)
-                      }}
-                    >
-                      {product.in_stock ? 'Add to Cart' : 'Out of Stock'}
-                    </Button>
-                  </CardContent>
-                </a>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* No Results */}
-        {state.products.length === 0 && !state.loading && (
-          <Card className="text-center py-12 mt-8">
-            <CardContent>
-              <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-600 mb-4">
-                {state.filters.query 
-                  ? `No products match your search for &ldquo;${state.filters.query}&rdquo;`
-                  : 'No products available at the moment'
-                }
-              </p>
-                             {state.filters.query && (
-                 <Button onClick={clearSearch}>
-                   Clear Search
-                 </Button>
-               )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Load More Button */}
-        {state.hasMore && !state.loading && (
-          <div className="flex justify-center mt-12">
-            <Button 
-              onClick={loadMoreProducts}
-              className="px-8 py-3"
-            >
-              Load More Products
-            </Button>
-          </div>
-        )}
-
-        {/* Loading More State */}
-        {state.loading && state.products.length > 0 && (
-          <div className="flex justify-center mt-8">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
-              <span className="text-gray-600">Loading more products...</span>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
