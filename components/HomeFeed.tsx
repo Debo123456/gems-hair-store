@@ -7,7 +7,7 @@ import { ProductService } from "@/lib/productService"
 import { Product } from "@/lib/supabase"
 import Link from "next/link"
 import { ProductCard } from "./ProductCard"
-import { ProductFilters } from "./ProductFilters"
+import { ProductFiltersWrapper } from "./ProductFiltersWrapper"
 
 interface HomeFeedProps {
   sections?: ('bestSellers' | 'newArrivals' | 'topRated' | 'dealsOfTheDay')[]
@@ -218,7 +218,7 @@ export const HomeFeed = ({ sections = ['bestSellers', 'newArrivals', 'topRated',
         {/* Product Sections */}
         <div className="xl:flex xl:gap-8">
           {/* Desktop Filters */}
-          <ProductFilters className="xl:block" onFiltersChange={handleFiltersChange} />
+          <ProductFiltersWrapper className="xl:block" onFiltersChange={handleFiltersChange} />
           
           {/* Product Content */}
           <div className="xl:flex-1">

@@ -8,7 +8,7 @@ import { Search, Loader2 } from "lucide-react"
 import { ProductService } from "@/lib/productService"
 import { Product } from "@/lib/supabase"
 import { ProductCard } from "@/components/ProductCard"
-import { ProductFilters } from "@/components/ProductFilters"
+import { ProductFiltersWrapper } from "@/components/ProductFiltersWrapper"
 
 // Skeleton Product Card Component
 const ProductCardSkeleton = () => {
@@ -163,7 +163,7 @@ export default function ProductsPage() {
         {/* Main Content */}
         <div className="xl:flex xl:gap-8">
           {/* Desktop Filters */}
-          <ProductFilters className="xl:block" onFiltersChange={handleFiltersChange} />
+          <ProductFiltersWrapper className="xl:block" onFiltersChange={handleFiltersChange} />
           
           {/* Products Grid */}
           <div className="xl:flex-1">
