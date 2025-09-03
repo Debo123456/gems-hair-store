@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Edit, Trash2, Eye, Package, ShoppingCart, Heart } from "lucide-react"
+import { Edit, Trash2, Eye, Package } from "lucide-react"
 import { AdminProduct } from "@/lib/adminProductService"
 
 interface AdminProductCardProps {
@@ -32,7 +32,6 @@ export function AdminProductCard({
     if (product.is_new) badges.push({ text: "New", color: "bg-green-100 text-green-800" })
     if (product.is_on_sale) badges.push({ text: "Sale", color: "bg-red-100 text-red-800" })
     if (product.is_featured) badges.push({ text: "Featured", color: "bg-purple-100 text-purple-800" })
-    if (product.is_best_seller) badges.push({ text: "Best Seller", color: "bg-yellow-100 text-yellow-800" })
     return badges
   }
 
