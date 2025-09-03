@@ -14,7 +14,7 @@ interface UseCustomersReturn {
   refresh: () => Promise<void>
   setFilters: (filters: CustomerFilters) => void
   setPage: (page: number) => void
-  setSortBy: (sortBy: string) => void
+  setSortBy: (sortBy: 'created_at' | 'total_spent' | 'total_orders' | 'name') => void
   setSortOrder: (sortOrder: 'asc' | 'desc') => void
   searchCustomers: (searchTerm: string) => Promise<void>
 }
