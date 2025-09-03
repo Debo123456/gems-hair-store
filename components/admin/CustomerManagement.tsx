@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Filter, Eye, Mail, Phone, MapPin, Calendar, DollarSign, ShoppingBag, Star, Users, CheckCircle } from "lucide-react"
+import { Search, Filter, Eye, Mail, Phone, MapPin, DollarSign, Star, Users, CheckCircle } from "lucide-react"
 import { useCustomers } from "@/hooks/useCustomers"
 import { Customer } from "@/lib/customerService"
 
@@ -17,16 +17,13 @@ export function CustomerManagement() {
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
 
-  // Use real customer data from the database
+    // Use real customer data from the database
   const { 
     customers, 
     loading, 
     error, 
-    total, 
-    page, 
-    totalPages,
+    total,
     setFilters,
-    setPage,
     searchCustomers
   } = useCustomers({
     initialPage: 1,
@@ -46,7 +43,8 @@ export function CustomerManagement() {
       lastOrderDate: "2024-01-15",
       status: "vip",
       location: "New York, NY",
-      avatar: "/avatars/sarah.jpg"
+      avatar: "/avatars/sarah.jpg",
+      role: "customer"
     },
     {
       id: "2",
@@ -59,7 +57,8 @@ export function CustomerManagement() {
       lastOrderDate: "2024-01-14",
       status: "active",
       location: "Los Angeles, CA",
-      avatar: "/avatars/michael.jpg"
+      avatar: "/avatars/michael.jpg",
+      role: "customer"
     },
     {
       id: "3",
@@ -72,7 +71,8 @@ export function CustomerManagement() {
       lastOrderDate: "2024-01-13",
       status: "active",
       location: "Chicago, IL",
-      avatar: "/avatars/emily.jpg"
+      avatar: "/avatars/emily.jpg",
+      role: "customer"
     },
     {
       id: "4",
@@ -85,7 +85,8 @@ export function CustomerManagement() {
       lastOrderDate: "2024-01-12",
       status: "active",
       location: "Miami, FL",
-      avatar: "/avatars/david.jpg"
+      avatar: "/avatars/david.jpg",
+      role: "customer"
     },
     {
       id: "5",
@@ -98,7 +99,8 @@ export function CustomerManagement() {
       lastOrderDate: "2024-01-10",
       status: "vip",
       location: "San Francisco, CA",
-      avatar: "/avatars/lisa.jpg"
+      avatar: "/avatars/lisa.jpg",
+      role: "customer"
     },
     {
       id: "6",
@@ -111,7 +113,8 @@ export function CustomerManagement() {
       lastOrderDate: "Never",
       status: "inactive",
       location: "Seattle, WA",
-      avatar: "/avatars/james.jpg"
+      avatar: "/avatars/james.jpg",
+      role: "customer"
     }
   ]
 
@@ -157,15 +160,6 @@ export function CustomerManagement() {
       searchCustomers(query)
     } else {
       setFilters({})
-    }
-  }
-
-  const getStatusColor = (status: Customer['status']) => {
-    switch (status) {
-      case 'active': return 'default'
-      case 'inactive': return 'secondary'
-      case 'vip': return 'default'
-      default: return 'default'
     }
   }
 
