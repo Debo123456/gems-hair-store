@@ -15,6 +15,7 @@ import { EditProductModal } from "./EditProductModal"
 import { ViewProductModal } from "./ViewProductModal"
 import { DeleteProductDialog } from "./DeleteProductDialog"
 import { BulkDeleteDialog } from "./BulkDeleteDialog"
+import { AdminProductCard } from "./AdminProductCard"
 import { useAdminProducts } from "@/hooks/useAdminProducts"
 import { AdminProduct } from "@/lib/adminProductService"
 
@@ -108,12 +109,6 @@ export function ProductManagement() {
   const handleProductDeleted = () => {
     setDeletingProduct(null)
     refresh()
-  }
-
-  const getStockStatus = (product: AdminProduct) => {
-    if (!product.in_stock) return { label: "Out of Stock", color: "destructive" }
-    if (product.stock_quantity < 10) return { label: "Low Stock", color: "warning" }
-    return { label: "In Stock", color: "default" }
   }
 
   return (
@@ -239,84 +234,17 @@ export function ProductManagement() {
             ))}
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {products.map(product => (
-              <Card key={product.id} className="relative">
-                <div className="absolute top-4 left-4">
-                  <Checkbox
-                    checked={selectedProducts.includes(product.id)}
-                    onCheckedChange={() => handleSelectProduct(product.id)}
-                  />
-                </div>
-                <CardHeader className="pb-3">
-                  <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                    {product.image_url ? (
-                      <img 
-                        src={product.image_url} 
-                        alt={product.name}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    ) : (
-                      <Package className="h-12 w-12 text-gray-400" />
-                    )}
-                  </div>
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {product.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">${product.price}</span>
-                    {product.original_price && product.original_price > product.price && (
-                      <span className="text-sm text-gray-500 line-through">
-                        ${product.original_price}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getStockStatus(product).color as "default" | "destructive" | "secondary" | "outline"}>
-                      {getStockStatus(product).label}
-                    </Badge>
-                    <Badge variant="outline">{product.category}</Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>⭐ {product.rating}</span>
-                    <span>•</span>
-                    <span>{product.review_count} reviews</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>Stock: {product.stock_quantity}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleEditProduct(product)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleViewProduct(product)}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => handleDeleteProduct(product)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <AdminProductCard
+                key={product.id}
+                product={product}
+                isSelected={selectedProducts.includes(product.id)}
+                onSelect={handleSelectProduct}
+                onEdit={handleEditProduct}
+                onView={handleViewProduct}
+                onDelete={handleDeleteProduct}
+              />
             ))}
           </div>
         ) : (
@@ -382,8 +310,8 @@ export function ProductManagement() {
                           )}
                         </td>
                         <td className="p-4">
-                          <Badge variant={getStockStatus(product).color as "default" | "destructive" | "secondary" | "outline"}>
-                            {getStockStatus(product).label}
+                          <Badge variant={!product.in_stock ? "destructive" : product.stock_quantity < 10 ? "secondary" : "default"}>
+                            {!product.in_stock ? "Out of Stock" : product.stock_quantity < 10 ? "Low Stock" : "In Stock"}
                           </Badge>
                           <div className="text-sm text-gray-600 mt-1">
                             {product.stock_quantity} units

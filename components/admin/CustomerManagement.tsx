@@ -9,27 +9,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, Filter, Eye, Mail, Phone, MapPin, Calendar, DollarSign, ShoppingBag, Star, Users, CheckCircle } from "lucide-react"
-
-interface Customer {
-  id: string
-  name: string
-  email: string
-  phone: string
-  joinDate: string
-  totalOrders: number
-  totalSpent: number
-  lastOrderDate: string
-  status: 'active' | 'inactive' | 'vip'
-  location: string
-  avatar?: string
-}
+import { useCustomers } from "@/hooks/useCustomers"
+import { Customer } from "@/lib/customerService"
 
 export function CustomerManagement() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
 
-  // Mock customers data - in a real app, this would come from Supabase
+  // Use real customer data from the database
+  const { 
+    customers, 
+    loading, 
+    error, 
+    total, 
+    page, 
+    totalPages,
+    setFilters,
+    setPage,
+    searchCustomers
+  } = useCustomers({
+    initialPage: 1,
+    initialLimit: 20
+  })
+
+  // Mock customers data for fallback - in a real app, this would come from Supabase
   const mockCustomers: Customer[] = [
     {
       id: "1",
@@ -113,13 +117,8 @@ export function CustomerManagement() {
 
   const statuses = ["all", "active", "inactive", "vip"]
 
-  const filteredCustomers = mockCustomers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         customer.phone.includes(searchQuery)
-    const matchesStatus = selectedStatus === "all" || customer.status === selectedStatus
-    return matchesSearch && matchesStatus
-  })
+  // Use real customers data from the database
+  const displayCustomers = customers
 
   const handleSelectCustomer = (customerId: string) => {
     setSelectedCustomers(prev => 
@@ -130,10 +129,10 @@ export function CustomerManagement() {
   }
 
   const handleSelectAll = () => {
-    if (selectedCustomers.length === filteredCustomers.length) {
+    if (selectedCustomers.length === displayCustomers.length) {
       setSelectedCustomers([])
     } else {
-      setSelectedCustomers(filteredCustomers.map(c => c.id))
+      setSelectedCustomers(displayCustomers.map(c => c.id))
     }
   }
 
@@ -141,6 +140,24 @@ export function CustomerManagement() {
     // In a real app, this would perform bulk actions on selected customers
     console.log("Performing action:", action, "on customers:", selectedCustomers)
     setSelectedCustomers([])
+  }
+
+  const handleStatusFilter = (status: string) => {
+    setSelectedStatus(status)
+    if (status === "all") {
+      setFilters({})
+    } else {
+      setFilters({ status: [status] })
+    }
+  }
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    if (query.trim()) {
+      searchCustomers(query)
+    } else {
+      setFilters({})
+    }
   }
 
   const getStatusColor = (status: Customer['status']) => {
@@ -271,11 +288,11 @@ export function CustomerManagement() {
               <Input
                 placeholder="Search customers..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <Select value={selectedStatus} onValueChange={handleStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -324,28 +341,41 @@ export function CustomerManagement() {
       {/* Customers Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left p-4">
-                    <Checkbox
-                      checked={selectedCustomers.length === filteredCustomers.length}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </th>
-                  <th className="text-left p-4">Customer</th>
-                  <th className="text-left p-4">Contact</th>
-                  <th className="text-left p-4">Location</th>
-                  <th className="text-left p-4">Status</th>
-                  <th className="text-left p-4">Orders</th>
-                  <th className="text-left p-4">Total Spent</th>
-                  <th className="text-left p-4">Last Order</th>
-                  <th className="text-left p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCustomers.map(customer => (
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="text-gray-500">Loading customers...</div>
+            </div>
+          ) : error ? (
+            <div className="p-8 text-center">
+              <div className="text-red-500">Error loading customers: {error}</div>
+            </div>
+          ) : displayCustomers.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="text-gray-500">No customers found</div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left p-4">
+                      <Checkbox
+                        checked={selectedCustomers.length === displayCustomers.length && displayCustomers.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </th>
+                    <th className="text-left p-4">Customer</th>
+                    <th className="text-left p-4">Contact</th>
+                    <th className="text-left p-4">Location</th>
+                    <th className="text-left p-4">Status</th>
+                    <th className="text-left p-4">Orders</th>
+                    <th className="text-left p-4">Total Spent</th>
+                    <th className="text-left p-4">Last Order</th>
+                    <th className="text-left p-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayCustomers.map(customer => (
                   <tr key={customer.id} className="border-b hover:bg-gray-50">
                     <td className="p-4">
                       <Checkbox
@@ -373,16 +403,18 @@ export function CustomerManagement() {
                           <Mail className="h-3 w-3" />
                           {customer.email}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="h-3 w-3" />
-                          {customer.phone}
-                        </div>
+                        {customer.phone && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="h-3 w-3" />
+                            {customer.phone}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <MapPin className="h-3 w-3" />
-                        {customer.location}
+                        {customer.location || 'N/A'}
                       </div>
                     </td>
                     <td className="p-4">
@@ -406,10 +438,10 @@ export function CustomerManagement() {
                     </td>
                     <td className="p-4">
                       <div className="text-sm">
-                        {customer.lastOrderDate === "Never" ? (
-                          <span className="text-gray-500">Never</span>
-                        ) : (
+                        {customer.lastOrderDate ? (
                           new Date(customer.lastOrderDate).toLocaleDateString()
+                        ) : (
+                          <span className="text-gray-500">Never</span>
                         )}
                       </div>
                     </td>
@@ -438,6 +470,7 @@ export function CustomerManagement() {
               </tbody>
             </table>
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -450,8 +483,8 @@ export function CustomerManagement() {
           </CardHeader>
           <CardContent className="space-y-3">
             {['High Value', 'Medium Value', 'Low Value', 'No Value'].map(segment => {
-              const count = mockCustomers.filter(c => getCustomerValue(c) === segment).length
-              const percentage = Math.round((count / mockCustomers.length) * 100)
+              const count = displayCustomers.filter(c => getCustomerValue(c) === segment).length
+              const percentage = displayCustomers.length > 0 ? Math.round((count / displayCustomers.length) * 100) : 0
               return (
                 <div key={segment} className="flex items-center justify-between">
                   <span className="text-sm">{segment}</span>
@@ -498,7 +531,7 @@ export function CustomerManagement() {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          Showing {filteredCustomers.length} of {mockCustomers.length} customers
+          Showing {displayCustomers.length} of {total} customers
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled>

@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Package, ShoppingCart, Users, BarChart3, Plus, Edit, Trash2,
-  Calendar, DollarSign, Truck, CheckCircle, TrendingUp, Eye
+  Calendar, DollarSign, Truck, CheckCircle, TrendingUp, Eye, Star
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { AdminOnly } from "@/components/ProtectedRoute"
@@ -17,17 +17,18 @@ import { OrderManagement } from "@/components/admin/OrderManagement"
 import { CustomerManagement } from "@/components/admin/CustomerManagement"
 import { AdminAnalytics } from "@/components/admin/AdminAnalytics"
 
+import { useOrderStats } from "@/hooks/useOrders"
+import { useCustomerStats } from "@/hooks/useCustomers"
+
 export default function AdminDashboardPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("products")
+  const { stats: orderStats, loading: orderStatsLoading } = useOrderStats()
+  const { stats: customerStats, loading: customerStatsLoading } = useCustomerStats()
 
-  // Mock admin data - in a real app, this would come from Supabase
+  // Mock data for other stats - these would come from other services in a real app
   const mockStats = {
     totalProducts: 24,
-    totalOrders: 156,
-    totalCustomers: 89,
-    totalRevenue: 45678.90,
-    pendingOrders: 12,
     lowStockProducts: 3
   }
 
@@ -81,9 +82,11 @@ export default function AdminDashboardPage() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockStats.totalOrders}</div>
+                <div className="text-2xl font-bold">
+                  {orderStatsLoading ? "..." : orderStats?.total_orders || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  +12 from last month
+                  {orderStatsLoading ? "Loading..." : `${orderStats?.pending_orders || 0} pending`}
                 </p>
               </CardContent>
             </Card>
@@ -94,9 +97,11 @@ export default function AdminDashboardPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockStats.totalCustomers}</div>
+                <div className="text-2xl font-bold">
+                  {customerStatsLoading ? "..." : customerStats?.total_customers || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  +8 from last month
+                  {customerStatsLoading ? "Loading..." : `${customerStats?.new_customers_this_month || 0} new this month`}
                 </p>
               </CardContent>
             </Card>
@@ -107,9 +112,107 @@ export default function AdminDashboardPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${mockStats.totalRevenue.toLocaleString()}</div>
+                <div className="text-2xl font-bold">
+                  ${orderStatsLoading ? "..." : (orderStats?.total_revenue || 0).toLocaleString()}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  +23% from last month
+                  {orderStatsLoading ? "Loading..." : `Avg: $${(orderStats?.average_order_value || 0).toFixed(2)}`}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Customer Status Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {customerStatsLoading ? "..." : customerStats?.active_customers || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recent activity
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">VIP Customers</CardTitle>
+                <Star className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {customerStatsLoading ? "..." : customerStats?.vip_customers || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  High value customers
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">New This Month</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {customerStatsLoading ? "..." : customerStats?.new_customers_this_month || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recent signups
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Order Status Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Processing</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {orderStatsLoading ? "..." : orderStats?.processing_orders || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Being prepared
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Shipped</CardTitle>
+                <Truck className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {orderStatsLoading ? "..." : orderStats?.shipped_orders || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  In transit
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Delivered</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {orderStatsLoading ? "..." : orderStats?.delivered_orders || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Completed
                 </p>
               </CardContent>
             </Card>
@@ -124,11 +227,15 @@ export default function AdminDashboardPage() {
                   Pending Orders
                 </CardTitle>
                 <CardDescription>
-                  {mockStats.pendingOrders} orders need attention
+                  {orderStatsLoading ? "Loading..." : `${orderStats?.pending_orders || 0} orders need attention`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setActiveTab("orders")}
+                >
                   View Pending Orders
                 </Button>
               </CardContent>

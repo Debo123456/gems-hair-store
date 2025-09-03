@@ -9,111 +9,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Search, Filter, Eye, Truck, CheckCircle, Clock, AlertCircle, Package } from "lucide-react"
-
-interface Order {
-  id: string
-  orderNumber: string
-  customerName: string
-  customerEmail: string
-  orderDate: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-  totalAmount: number
-  items: Array<{
-    id: string
-    name: string
-    quantity: number
-    price: number
-  }>
-  shippingAddress: string
-  paymentMethod: string
-  paymentStatus: 'pending' | 'paid' | 'failed'
-}
+import { useOrders } from "@/hooks/useOrders"
+import { Order, OrderStatus, ORDER_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from "@/lib/orderTypes"
 
 export function OrderManagement() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
 
-  // Mock orders data - in a real app, this would come from Supabase
-  const mockOrders: Order[] = [
-    {
-      id: "1",
-      orderNumber: "ORD-2024-001",
-      customerName: "Sarah Johnson",
-      customerEmail: "sarah.j@email.com",
-      orderDate: "2024-01-15",
-      status: "pending",
-      totalAmount: 89.97,
-      items: [
-        { id: "1", name: "Nourishing Hair Mask", quantity: 2, price: 24.99 },
-        { id: "2", name: "Volumizing Shampoo", quantity: 1, price: 18.99 },
-        { id: "3", name: "Heat Protection Spray", quantity: 1, price: 22.99 }
-      ],
-      shippingAddress: "123 Main St, New York, NY 10001",
-      paymentMethod: "Bank Transfer",
-      paymentStatus: "paid"
-    },
-    {
-      id: "2",
-      orderNumber: "ORD-2024-002",
-      customerName: "Michael Chen",
-      customerEmail: "mchen@email.com",
-      orderDate: "2024-01-14",
-      status: "processing",
-      totalAmount: 156.85,
-      items: [
-        { id: "4", name: "Professional Hair Dryer", quantity: 1, price: 89.99 },
-        { id: "5", name: "Styling Gel", quantity: 2, price: 16.99 },
-        { id: "6", name: "Hair Brush Set", quantity: 1, price: 32.88 }
-      ],
-      shippingAddress: "456 Oak Ave, Los Angeles, CA 90210",
-      paymentMethod: "Bank Transfer",
-      paymentStatus: "paid"
-    },
-    {
-      id: "3",
-      orderNumber: "ORD-2024-003",
-      customerName: "Emily Rodriguez",
-      customerEmail: "emily.r@email.com",
-      orderDate: "2024-01-13",
-      status: "shipped",
-      totalAmount: 45.98,
-      items: [
-        { id: "7", name: "Color-Safe Conditioner", quantity: 1, price: 22.99 },
-        { id: "8", name: "Hair Oil Treatment", quantity: 1, price: 22.99 }
-      ],
-      shippingAddress: "789 Pine Rd, Chicago, IL 60601",
-      paymentMethod: "Bank Transfer",
-      paymentStatus: "paid"
-    },
-    {
-      id: "4",
-      orderNumber: "ORD-2024-004",
-      customerName: "David Thompson",
-      customerEmail: "dthompson@email.com",
-      orderDate: "2024-01-12",
-      status: "delivered",
-      totalAmount: 67.96,
-      items: [
-        { id: "9", name: "Anti-Frizz Serum", quantity: 1, price: 28.99 },
-        { id: "10", name: "Hair Spray", quantity: 1, price: 18.99 },
-        { id: "11", name: "Hair Clips", quantity: 1, price: 19.98 }
-      ],
-      shippingAddress: "321 Elm St, Miami, FL 33101",
-      paymentMethod: "Bank Transfer",
-      paymentStatus: "paid"
-    }
-  ]
+  // Use real order data from the database
+  const { 
+    orders, 
+    loading, 
+    error, 
+    total, 
+    page, 
+    totalPages,
+    setFilters,
+    setPage,
+    updateOrderStatus,
+    searchOrders
+  } = useOrders({
+    initialPage: 1,
+    initialLimit: 20
+  })
+
+
 
   const statuses = ["all", "pending", "processing", "shipped", "delivered", "cancelled"]
 
-  const filteredOrders = mockOrders.filter(order => {
-    const matchesSearch = order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.customerEmail.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = selectedStatus === "all" || order.status === selectedStatus
-    return matchesSearch && matchesStatus
-  })
+  // Use real orders data from the database
+  const displayOrders = orders
 
   const handleSelectOrder = (orderId: string) => {
     setSelectedOrders(prev => 
@@ -124,26 +50,55 @@ export function OrderManagement() {
   }
 
   const handleSelectAll = () => {
-    if (selectedOrders.length === filteredOrders.length) {
+    if (selectedOrders.length === displayOrders.length) {
       setSelectedOrders([])
     } else {
-      setSelectedOrders(filteredOrders.map(o => o.id))
+      setSelectedOrders(displayOrders.map(o => o.id))
     }
   }
 
-  const handleBulkStatusUpdate = (newStatus: Order['status']) => {
-    // In a real app, this would call Supabase to update order statuses
-    console.log("Updating orders:", selectedOrders, "to status:", newStatus)
-    setSelectedOrders([])
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    try {
+      // Update each selected order
+      for (const orderId of selectedOrders) {
+        await updateOrderStatus(orderId, newStatus, 'Bulk status update')
+      }
+      setSelectedOrders([])
+    } catch (error) {
+      console.error('Failed to update order statuses:', error)
+    }
   }
 
-  const getStatusColor = (status: Order['status']) => {
-    switch (status) {
-      case 'pending': return 'warning'
-      case 'processing': return 'default'
-      case 'shipped': return 'secondary'
-      case 'delivered': return 'default'
-      case 'cancelled': return 'destructive'
+  const handleStatusFilter = (status: string) => {
+    setSelectedStatus(status)
+    if (status === "all") {
+      setFilters({})
+    } else {
+      setFilters({ status: [status as OrderStatus] })
+    }
+  }
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    if (query.trim()) {
+      searchOrders(query)
+    } else {
+      setFilters({})
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    const config = ORDER_STATUS_CONFIG[status as keyof typeof ORDER_STATUS_CONFIG]
+    if (!config) return 'default'
+    
+    switch (config.color) {
+      case 'yellow': return 'warning'
+      case 'blue': return 'default'
+      case 'purple': return 'secondary'
+      case 'indigo': return 'secondary'
+      case 'green': return 'default'
+      case 'red': return 'destructive'
+      case 'gray': return 'secondary'
       default: return 'default'
     }
   }
@@ -159,7 +114,7 @@ export function OrderManagement() {
     }
   }
 
-  const getPaymentStatusColor = (status: Order['paymentStatus']) => {
+  const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'default'
       case 'pending': return 'warning'
@@ -201,11 +156,11 @@ export function OrderManagement() {
               <Input
                 placeholder="Search orders, customers..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <Select value={selectedStatus} onValueChange={handleStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -262,27 +217,43 @@ export function OrderManagement() {
       {/* Orders Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left p-4">
-                    <Checkbox
-                      checked={selectedOrders.length === filteredOrders.length}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </th>
-                  <th className="text-left p-4">Order</th>
-                  <th className="text-left p-4">Customer</th>
-                  <th className="text-left p-4">Date</th>
-                  <th className="text-left p-4">Status</th>
-                  <th className="text-left p-4">Total</th>
-                  <th className="text-left p-4">Payment</th>
-                  <th className="text-left p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map(order => (
+          {loading && (
+            <div className="p-8 text-center">
+              <div className="text-gray-500">Loading orders...</div>
+            </div>
+          )}
+          {error && (
+            <div className="p-8 text-center">
+              <div className="text-red-500">Error loading orders: {error}</div>
+            </div>
+          )}
+          {!loading && !error && displayOrders.length === 0 && (
+            <div className="p-8 text-center">
+              <div className="text-gray-500">No orders found</div>
+            </div>
+          )}
+          {!loading && !error && displayOrders.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left p-4">
+                      <Checkbox
+                        checked={selectedOrders.length === displayOrders.length && displayOrders.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </th>
+                    <th className="text-left p-4">Order</th>
+                    <th className="text-left p-4">Customer</th>
+                    <th className="text-left p-4">Date</th>
+                    <th className="text-left p-4">Status</th>
+                    <th className="text-left p-4">Total</th>
+                    <th className="text-left p-4">Payment</th>
+                    <th className="text-left p-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayOrders.map(order => (
                   <tr key={order.id} className="border-b hover:bg-gray-50">
                     <td className="p-4">
                       <Checkbox
@@ -291,18 +262,18 @@ export function OrderManagement() {
                       />
                     </td>
                     <td className="p-4">
-                      <div className="font-medium">{order.orderNumber}</div>
+                      <div className="font-medium">{order.order_number}</div>
                       <div className="text-sm text-gray-600">
-                        {order.items.length} item(s)
+                        {order.items?.length || 0} item(s)
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="font-medium">{order.customerName}</div>
-                      <div className="text-sm text-gray-600">{order.customerEmail}</div>
+                      <div className="font-medium">{order.customer_name}</div>
+                      <div className="text-sm text-gray-600">{order.customer_email}</div>
                     </td>
                     <td className="p-4">
                       <div className="text-sm">
-                        {new Date(order.orderDate).toLocaleDateString()}
+                        {new Date(order.created_at).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="p-4">
@@ -312,14 +283,14 @@ export function OrderManagement() {
                       </Badge>
                     </td>
                     <td className="p-4">
-                      <div className="font-medium">${order.totalAmount.toFixed(2)}</div>
+                      <div className="font-medium">${order.total_amount.toFixed(2)}</div>
                     </td>
                     <td className="p-4">
                       <div className="space-y-1">
-                        <Badge variant={getPaymentStatusColor(order.paymentStatus) as "default" | "destructive" | "secondary" | "outline"}>
-                          {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                        <Badge variant={getPaymentStatusColor(order.payment_status) as "default" | "destructive" | "secondary" | "outline"}>
+                          {PAYMENT_STATUS_CONFIG[order.payment_status as keyof typeof PAYMENT_STATUS_CONFIG]?.label || order.payment_status}
                         </Badge>
-                        <div className="text-sm text-gray-600">{order.paymentMethod}</div>
+                        <div className="text-sm text-gray-600">{order.payment_method || 'N/A'}</div>
                       </div>
                     </td>
                     <td className="p-4">
@@ -349,6 +320,7 @@ export function OrderManagement() {
               </tbody>
             </table>
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -360,7 +332,7 @@ export function OrderManagement() {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          Showing {filteredOrders.length} of {mockOrders.length} orders
+          Showing {displayOrders.length} of {total} orders
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled>

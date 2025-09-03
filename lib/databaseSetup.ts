@@ -228,6 +228,16 @@ export class DatabaseSetup {
     try {
       console.log('Initializing database...')
 
+      // Setup orders table first
+      const hasOrdersTable = await this.hasOrdersTable()
+      if (!hasOrdersTable) {
+        console.log('Setting up orders table...')
+        const ordersSuccess = await this.setupOrdersTable()
+        if (!ordersSuccess) {
+          return { success: false, message: 'Failed to setup orders table' }
+        }
+      }
+
       // Check if categories exist
       const hasCategories = await this.hasCategories()
       if (!hasCategories) {
@@ -259,18 +269,215 @@ export class DatabaseSetup {
   }
 
   /**
+   * Check if the database has orders table
+   */
+  static async hasOrdersTable(): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+
+      // If we get an error, the table doesn't exist
+      if (error) {
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error checking orders table:', error)
+      return false
+    }
+  }
+
+  /**
+   * Setup orders table and related functionality
+   */
+  static async setupOrdersTable(): Promise<boolean> {
+    try {
+      // Read the SQL from the orders setup file
+      const ordersSetupSQL = `
+        -- Create orders table
+        CREATE TABLE IF NOT EXISTS orders (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+          order_number VARCHAR(20) UNIQUE NOT NULL,
+          status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')),
+          total_amount DECIMAL(10,2) NOT NULL,
+          subtotal DECIMAL(10,2) NOT NULL,
+          tax_amount DECIMAL(10,2) DEFAULT 0,
+          shipping_amount DECIMAL(10,2) DEFAULT 0,
+          discount_amount DECIMAL(10,2) DEFAULT 0,
+          currency VARCHAR(3) DEFAULT 'USD',
+          
+          -- Customer Information
+          customer_email VARCHAR(255) NOT NULL,
+          customer_name VARCHAR(255) NOT NULL,
+          customer_phone VARCHAR(20),
+          
+          -- Shipping Address
+          shipping_address JSONB NOT NULL,
+          
+          -- Billing Address (optional, defaults to shipping)
+          billing_address JSONB,
+          
+          -- Payment Information
+          payment_method VARCHAR(50),
+          payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
+          payment_id VARCHAR(255),
+          
+          -- Shipping Information
+          shipping_method VARCHAR(100),
+          tracking_number VARCHAR(100),
+          estimated_delivery DATE,
+          
+          -- Order Notes
+          notes TEXT,
+          internal_notes TEXT,
+          
+          -- Timestamps
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          shipped_at TIMESTAMP WITH TIME ZONE,
+          delivered_at TIMESTAMP WITH TIME ZONE
+        );
+
+        -- Create order_items table
+        CREATE TABLE IF NOT EXISTS order_items (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+          product_id UUID NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+          product_name VARCHAR(255) NOT NULL,
+          product_sku VARCHAR(100),
+          product_image_url TEXT,
+          quantity INTEGER NOT NULL CHECK (quantity > 0),
+          unit_price DECIMAL(10,2) NOT NULL,
+          total_price DECIMAL(10,2) NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+
+        -- Create order_status_history table for tracking status changes
+        CREATE TABLE IF NOT EXISTS order_status_history (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+          status VARCHAR(20) NOT NULL,
+          notes TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          created_by UUID REFERENCES auth.users(id)
+        );
+
+        -- Create indexes for better performance
+        CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+        CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+        CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
+        CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+        CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
+        CREATE INDEX IF NOT EXISTS idx_order_status_history_order_id ON order_status_history(order_id);
+
+        -- Enable Row Level Security (RLS)
+        ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE order_status_history ENABLE ROW LEVEL SECURITY;
+
+        -- Create RLS policies for orders
+        CREATE POLICY IF NOT EXISTS "Users can view their own orders" ON orders
+          FOR SELECT USING (auth.uid() = user_id);
+
+        CREATE POLICY IF NOT EXISTS "Users can create their own orders" ON orders
+          FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+        CREATE POLICY IF NOT EXISTS "Users can update their own orders" ON orders
+          FOR UPDATE USING (auth.uid() = user_id);
+
+        -- Create RLS policies for order_items
+        CREATE POLICY IF NOT EXISTS "Users can view their own order items" ON order_items
+          FOR SELECT USING (
+            EXISTS (
+              SELECT 1 FROM orders 
+              WHERE orders.id = order_items.order_id 
+              AND orders.user_id = auth.uid()
+            )
+          );
+
+        CREATE POLICY IF NOT EXISTS "Users can create order items for their orders" ON order_items
+          FOR INSERT WITH CHECK (
+            EXISTS (
+              SELECT 1 FROM orders 
+              WHERE orders.id = order_items.order_id 
+              AND orders.user_id = auth.uid()
+            )
+          );
+
+        -- Create RLS policies for order_status_history
+        CREATE POLICY IF NOT EXISTS "Users can view their own order status history" ON order_status_history
+          FOR SELECT USING (
+            EXISTS (
+              SELECT 1 FROM orders 
+              WHERE orders.id = order_status_history.order_id 
+              AND orders.user_id = auth.uid()
+            )
+          );
+
+        -- Admin policies (for admin users)
+        CREATE POLICY IF NOT EXISTS "Admins can view all orders" ON orders
+          FOR ALL USING (
+            EXISTS (
+              SELECT 1 FROM user_profiles 
+              WHERE user_profiles.id = auth.uid() 
+              AND user_profiles.role = 'admin'
+            )
+          );
+
+        CREATE POLICY IF NOT EXISTS "Admins can view all order items" ON order_items
+          FOR ALL USING (
+            EXISTS (
+              SELECT 1 FROM user_profiles 
+              WHERE user_profiles.id = auth.uid() 
+              AND user_profiles.role = 'admin'
+            )
+          );
+
+        CREATE POLICY IF NOT EXISTS "Admins can view all order status history" ON order_status_history
+          FOR ALL USING (
+            EXISTS (
+              SELECT 1 FROM user_profiles 
+              WHERE user_profiles.id = auth.uid() 
+              AND user_profiles.role = 'admin'
+            )
+          );
+      `
+
+      // Execute the SQL
+      const { error } = await supabase.rpc('exec_sql', { sql: ordersSetupSQL })
+      
+      if (error) {
+        console.error('Error setting up orders table:', error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error in setupOrdersTable:', error)
+      return false
+    }
+  }
+
+  /**
    * Get database status
    */
   static async getDatabaseStatus(): Promise<{
     hasProducts: boolean
     hasCategories: boolean
+    hasOrdersTable: boolean
     productCount: number
     categoryCount: number
+    orderCount: number
   }> {
     try {
-      const [hasProducts, hasCategories] = await Promise.all([
+      const [hasProducts, hasCategories, hasOrdersTable] = await Promise.all([
         this.hasProducts(),
-        this.hasCategories()
+        this.hasCategories(),
+        this.hasOrdersTable()
       ])
 
       const { count: productCount } = await supabase
@@ -281,19 +488,31 @@ export class DatabaseSetup {
         .from('product_categories')
         .select('*', { count: 'exact', head: true })
 
+      let orderCount = 0
+      if (hasOrdersTable) {
+        const { count } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+        orderCount = count || 0
+      }
+
       return {
         hasProducts,
         hasCategories,
+        hasOrdersTable,
         productCount: productCount || 0,
-        categoryCount: categoryCount || 0
+        categoryCount: categoryCount || 0,
+        orderCount
       }
     } catch (error) {
       console.error('Error getting database status:', error)
       return {
         hasProducts: false,
         hasCategories: false,
+        hasOrdersTable: false,
         productCount: 0,
-        categoryCount: 0
+        categoryCount: 0,
+        orderCount: 0
       }
     }
   }

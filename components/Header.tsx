@@ -11,6 +11,7 @@ import { Search, Menu, User, Heart, LogOut, LogIn, X, ShoppingBag, User as UserI
 import { Cart } from "./Cart"
 import { useAuth } from "@/hooks/useAuth"
 import { AdminOnly } from "@/components/ProtectedRoute"
+
 import Link from "next/link"
 
 const Header = () => {
@@ -35,7 +36,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo and Mobile Menu Button */}
           <div className="flex items-center space-x-2">

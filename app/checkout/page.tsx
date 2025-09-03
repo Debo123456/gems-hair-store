@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { useCart } from "@/hooks/useCart"
 import { useAuth } from "@/hooks/useAuth"
 import { CartService } from "@/lib/cartService"
+import { OrderService } from "@/lib/orderService"
+import { CreateOrderData } from "@/lib/orderTypes"
 import { Package, Truck, CreditCard, CheckCircle, Loader2 } from "lucide-react"
 
 interface CheckoutFormData {
@@ -99,26 +101,38 @@ export default function CheckoutPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
-      // Create order object
-      const order = {
-        orderNumber: `ORD-${Date.now()}`,
-        items: cartState.items,
-        total: getCartTotal(),
-        customer: {
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          phone: formData.phone
+      // Create order data for OrderService
+      const orderData: CreateOrderData = {
+        user_id: user?.id || 'anonymous',
+        customer_email: formData.email,
+        customer_name: `${formData.firstName} ${formData.lastName}`,
+        customer_phone: formData.phone,
+        shipping_address: {
+          street: formData.shippingAddress.addressLine1,
+          city: formData.shippingAddress.city,
+          state: formData.shippingAddress.state,
+          zip: formData.shippingAddress.postalCode,
+          country: formData.shippingAddress.country,
+          apartment: formData.shippingAddress.addressLine2 || undefined
         },
-        shippingAddress: formData.shippingAddress,
-        paymentMethod: formData.paymentMethod,
-        status: "pending",
-        createdAt: new Date().toISOString()
+        total_amount: getCartTotal(),
+        subtotal: getCartTotal() * 0.9, // Assuming 10% tax
+        tax_amount: getCartTotal() * 0.1,
+        shipping_amount: 0, // Free shipping
+        payment_method: formData.paymentMethod,
+        payment_status: 'pending',
+        items: cartState.items.map(item => ({
+          product_id: item.id,
+          product_name: item.name,
+          product_image_url: item.image,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity
+        }))
       }
 
-      // Save order to localStorage (in a real app, this would go to Supabase)
-      const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]')
-      existingOrders.push(order)
-      localStorage.setItem('orders', JSON.stringify(existingOrders))
+      // Create order in Supabase
+      const createdOrder = await OrderService.createOrder(orderData)
 
       // Clear cart from Supabase if user is authenticated
       if (user) {
@@ -133,7 +147,7 @@ export default function CheckoutPage() {
       await clearCart()
 
       // Redirect to success page
-      router.push(`/checkout/success?order=${order.orderNumber}`)
+      router.push(`/checkout/success?order=${createdOrder.order_number}`)
     } catch (error) {
       console.error('Checkout failed:', error)
       setIsSubmitting(false)

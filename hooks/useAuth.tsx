@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
-import { supabase } from "@/lib/supabase"
+import { supabase, supabaseServiceRole } from "@/lib/supabase"
 import { UserProfile, UserAddress } from "@/lib/supabase"
 import { User } from '@supabase/supabase-js'
 
@@ -98,8 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserProfile = async (userId: string) => {
     try {
-      console.log('Loading user profile for userId:', userId)
-      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -107,12 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single()
 
       if (error) {
-        console.error('Supabase error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        })
+        console.error('Error loading user profile:', error)
         
         // Handle case where user profile doesn't exist yet
         if (error.code === 'PGRST116') {
@@ -161,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: userId,
             email: user.email || '',
             full_name: user.user_metadata?.full_name || 'User',
-            role: 'customer' // Default new users to customer role
+            role: user.email === 'admin@gemstore.com' ? 'admin' : 'customer' // Set admin role for admin email
           })
 
         if (error) {

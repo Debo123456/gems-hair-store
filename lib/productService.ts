@@ -324,8 +324,8 @@ export class ProductService {
         .order('name', { ascending: true })
 
       if (error) {
-        console.error('Error fetching categories:', error)
-        throw error
+        console.log('Error fetching categories:', error)
+        return []
       }
 
       return data || []
@@ -347,7 +347,7 @@ export class ProductService {
 
       if (error) {
         console.error('Error fetching category:', error)
-        throw error
+        return null
       }
 
       return data
