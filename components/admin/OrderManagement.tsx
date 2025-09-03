@@ -57,7 +57,7 @@ export function OrderManagement() {
     }
   }
 
-  const handleBulkStatusUpdate = async (newStatus: string) => {
+  const handleBulkStatusUpdate = async (newStatus: OrderStatus) => {
     try {
       // Update each selected order
       for (const orderId of selectedOrders) {

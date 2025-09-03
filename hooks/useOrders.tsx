@@ -14,12 +14,12 @@ interface UseOrdersReturn {
   refresh: () => Promise<void>
   createOrder: (data: CreateOrderData) => Promise<Order>
   updateOrder: (data: UpdateOrderData) => Promise<void>
-  updateOrderStatus: (orderId: string, status: string, notes?: string) => Promise<void>
+  updateOrderStatus: (orderId: string, status: OrderStatus, notes?: string) => Promise<void>
   cancelOrder: (orderId: string, reason?: string) => Promise<void>
   searchOrders: (searchTerm: string) => Promise<void>
   setFilters: (filters: OrderFilters) => void
   setPage: (page: number) => void
-  setSortBy: (sortBy: string) => void
+  setSortBy: (sortBy: 'created_at' | 'total_amount' | 'status' | 'order_number') => void
   setSortOrder: (sortOrder: 'asc' | 'desc') => void
 }
 
