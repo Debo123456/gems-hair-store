@@ -4,9 +4,11 @@ import { useState, use, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Star, Heart, Share2, Truck, Shield, RotateCcw, Package, Loader2 } from "lucide-react"
 import { useCart } from "@/hooks/useCart"
 import { useWishlist } from "@/hooks/useWishlist"
+import { useAuth } from "@/hooks/useAuth"
 import { ProductService } from "@/lib/productService"
 import { Product } from "@/lib/supabase"
 import { ProductCard } from "@/components/ProductCard"
@@ -22,6 +24,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+  const { user } = useAuth()
   
   const { id } = use(params)
 
@@ -112,6 +115,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const handleWishlistToggle = async () => {
+    if (!user) return
+    
     try {
       if (isInWishlist(product.id)) {
         await removeFromWishlist(product.id)
@@ -161,14 +166,35 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             
             {/* Product Actions */}
             <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className={`flex-1 ${isInWishlist(product.id) ? 'text-red-500 border-red-200' : ''}`}
-                onClick={handleWishlistToggle}
-              >
-                <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? 'fill-red-500' : ''}`} />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {user ? (
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className={`flex-1 ${isInWishlist(product.id) ? 'text-red-500 border-red-200' : ''}`}
+                        onClick={handleWishlistToggle}
+                      >
+                        <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? 'fill-red-500' : ''}`} />
+                      </Button>
+                    ) : (
+                      <div className={`flex-1 h-10 px-3 py-2 border border-gray-200 rounded-md flex items-center justify-center cursor-not-allowed opacity-50 ${
+                        isInWishlist(product.id) ? 'text-red-500 border-red-200' : ''
+                      }`}>
+                        <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? 'fill-red-500' : ''}`} />
+                      </div>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {user ? (
+                      isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'
+                    ) : (
+                      'Sign in to add to wishlist'
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button variant="outline" size="icon" className="flex-1">
                 <Share2 className="h-5 w-5" />
               </Button>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,43 +18,52 @@ import {
   Calendar,
   DollarSign,
   Truck,
-  CheckCircle
+  CheckCircle,
+  Star
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useWishlist } from "@/hooks/useWishlist"
+import { useOrders, useOrderStats } from "@/hooks/useOrders"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { AuthenticatedOnly } from "@/components/ProtectedRoute"
+import { ViewOrderModal } from "@/components/admin/ViewOrderModal"
+import { AddAddressModal } from "@/components/AddAddressModal"
+import { Order } from "@/lib/orderTypes"
+import { Product } from "@/lib/supabase"
 
 
 
 export default function DashboardPage() {
   const { user, profile, addresses, signOut, role, isAdmin, loading } = useAuth()
-  const { items: wishlistItems } = useWishlist()
+  const { items: wishlistItems, getWishlistProducts, clearWishlist, removeFromWishlist } = useWishlist()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("overview")
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null)
+  const [showAddAddressModal, setShowAddAddressModal] = useState(false)
+  const [wishlistProducts, setWishlistProducts] = useState<Product[]>([])
+  const [wishlistLoading, setWishlistLoading] = useState(false)
 
+  // Get real order data from Supabase
+  const { 
+    orders, 
+    loading: ordersLoading, 
+    error: ordersError, 
+    total: totalOrders,
+    updateOrderStatus
+  } = useOrders({
+    userId: user?.id,
+    initialPage: 1,
+    initialLimit: 10,
+    autoLoad: !!user?.id
+  })
 
-
-  // Mock order data - in a real app, this would come from Supabase
-  const mockOrders = [
-    {
-      id: "1",
-      orderNumber: "ORD-2024-001",
-      status: "delivered",
-      total: 89.97,
-      date: "2024-01-15",
-      items: 3
-    },
-    {
-      id: "2",
-      orderNumber: "ORD-2024-002",
-      status: "shipped",
-      total: 45.99,
-      date: "2024-01-20",
-      items: 2
-    }
-  ]
+  // Get order statistics
+  const { 
+    stats: orderStats, 
+    loading: statsLoading, 
+    error: statsError 
+  } = useOrderStats()
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -73,6 +82,62 @@ export default function DashboardPage() {
       case "processing": return <Package className="h-4 w-4" />
       case "pending": return <Calendar className="h-4 w-4" />
       default: return <Package className="h-4 w-4" />
+    }
+  }
+
+  const handleViewOrder = (order: Order) => {
+    setViewingOrder(order)
+  }
+
+  const handleAddAddress = () => {
+    setShowAddAddressModal(true)
+  }
+
+  const handleAddressAdded = () => {
+    // The useAuth hook will automatically refresh addresses
+    // No additional action needed here
+  }
+
+  // Load wishlist products when wishlist items change
+  useEffect(() => {
+    const loadWishlistProducts = async () => {
+      if (wishlistItems.length > 0) {
+        setWishlistLoading(true)
+        try {
+          const products = await getWishlistProducts()
+          setWishlistProducts(products)
+        } catch (error) {
+          console.error('Error loading wishlist products:', error)
+        } finally {
+          setWishlistLoading(false)
+        }
+      } else {
+        setWishlistProducts([])
+      }
+    }
+
+    loadWishlistProducts()
+  }, [wishlistItems, getWishlistProducts])
+
+  const handleClearWishlist = async () => {
+    try {
+      const result = await clearWishlist()
+      if (result.error) {
+        console.error('Error clearing wishlist:', result.error)
+      }
+    } catch (error) {
+      console.error('Error clearing wishlist:', error)
+    }
+  }
+
+  const handleRemoveFromWishlist = async (productId: string) => {
+    try {
+      const result = await removeFromWishlist(productId)
+      if (result.error) {
+        console.error('Error removing from wishlist:', result.error)
+      }
+    } catch (error) {
+      console.error('Error removing from wishlist:', error)
     }
   }
 
@@ -197,17 +262,45 @@ export default function DashboardPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total Orders:</span>
-                      <span className="font-medium">{mockOrders.length}</span>
+                  {ordersLoading ? (
+                    <div className="space-y-2">
+                      <div className="animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Recent:</span>
-                      <span className="font-medium">{mockOrders[0]?.orderNumber}</span>
+                  ) : ordersError ? (
+                    <div className="text-red-600 text-sm">
+                      Error loading orders
                     </div>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full mt-4">
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Orders:</span>
+                        <span className="font-medium">{totalOrders}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Recent:</span>
+                        <span className="font-medium">
+                          {orders[0]?.order_number || "None"}
+                        </span>
+                      </div>
+                      {orderStats && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Spent:</span>
+                          <span className="font-medium text-green-600">
+                            ${orderStats.total_revenue.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-4"
+                    onClick={() => setActiveTab("orders")}
+                  >
                     View All Orders
                   </Button>
                 </CardContent>
@@ -242,27 +335,84 @@ export default function DashboardPage() {
                 <CardDescription>Your latest order activity</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {mockOrders.slice(0, 3).map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-gray-100 rounded-full">
-                          <Package className="h-5 w-5 text-gray-600" />
+                {ordersLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-gray-100 rounded-full">
+                            <Package className="h-5 w-5 text-gray-600" />
+                          </div>
+                          <div className="animate-pulse">
+                            <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-24"></div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{order.orderNumber}</p>
-                          <p className="text-sm text-gray-600">{order.date}</p>
+                        <div className="text-right animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                          <div className="h-6 bg-gray-200 rounded w-20"></div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">${order.total}</p>
-                        <Badge className={getStatusColor(order.status)}>
-                          {order.status}
-                        </Badge>
+                    ))}
+                  </div>
+                ) : ordersError ? (
+                  <div className="text-center py-8">
+                    <div className="text-red-600 mb-2">Error loading orders</div>
+                    <p className="text-sm text-gray-600">Please try refreshing the page</p>
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
+                    <p className="text-gray-600 mb-4">Start shopping to see your orders here</p>
+                    <Button asChild>
+                      <Link href="/products">Browse Products</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.slice(0, 3).map((order) => (
+                      <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-gray-100 rounded-full">
+                            {getStatusIcon(order.status)}
+                          </div>
+                          <div>
+                            <p className="font-medium">{order.order_number}</p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${order.total_amount.toFixed(2)}</p>
+                          <Badge className={getStatusColor(order.status)}>
+                            {order.status}
+                          </Badge>
+                        </div>
+                        <div className="mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewOrder(order)}
+                          >
+                            View Details
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                    {orders.length > 3 && (
+                      <div className="text-center pt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setActiveTab("orders")}
+                        >
+                          View All Orders ({totalOrders})
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -275,35 +425,88 @@ export default function DashboardPage() {
                 <CardDescription>Track all your orders and their status</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {mockOrders.map((order) => (
-                    <div key={order.id} className="border rounded-lg p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-full">
-                            {getStatusIcon(order.status)}
+                {ordersLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="border rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-100 rounded-full">
+                              <Package className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <div className="animate-pulse">
+                              <div className="h-5 bg-gray-200 rounded w-32 mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded w-24"></div>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="font-semibold">{order.orderNumber}</h3>
-                            <p className="text-sm text-gray-600">Placed on {order.date}</p>
+                          <div className="text-right animate-pulse">
+                            <div className="h-8 bg-gray-200 rounded w-20 mb-2"></div>
+                            <div className="h-6 bg-gray-200 rounded w-16"></div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-purple-600">${order.total}</p>
-                          <Badge className={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
+                        <div className="flex items-center justify-between text-sm text-gray-600 animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-16"></div>
+                          <div className="h-8 bg-gray-200 rounded w-24"></div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-sm text-gray-600">
-                        <span>{order.items} items</span>
-                        <Button variant="outline" size="sm">
-                          View Details
-                        </Button>
+                    ))}
+                  </div>
+                ) : ordersError ? (
+                  <div className="text-center py-12">
+                    <div className="text-red-600 mb-2">Error loading orders</div>
+                    <p className="text-sm text-gray-600 mb-4">Please try refreshing the page</p>
+                    <Button onClick={() => window.location.reload()}>
+                      Refresh Page
+                    </Button>
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
+                    <p className="text-gray-600 mb-4">Start shopping to see your orders here</p>
+                    <Button asChild>
+                      <Link href="/products">Browse Products</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.map((order) => (
+                      <div key={order.id} className="border rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-100 rounded-full">
+                              {getStatusIcon(order.status)}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{order.order_number}</h3>
+                              <p className="text-sm text-gray-600">
+                                Placed on {new Date(order.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-purple-600">
+                              ${order.total_amount.toFixed(2)}
+                            </p>
+                            <Badge className={getStatusColor(order.status)}>
+                              {order.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <span>{order.items?.length || 0} items</span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewOrder(order)}
+                          >
+                            View Details
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -315,7 +518,7 @@ export default function DashboardPage() {
                 <h2 className="text-2xl font-bold text-gray-900">Addresses</h2>
                 <p className="text-gray-600">Manage your shipping and billing addresses</p>
               </div>
-              <Button>
+              <Button onClick={handleAddAddress}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Address
               </Button>
@@ -367,7 +570,7 @@ export default function DashboardPage() {
                     <p className="text-gray-600 mb-4">
                       Add your first address to make checkout faster
                     </p>
-                    <Button>
+                    <Button onClick={handleAddAddress}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Address
                     </Button>
@@ -385,24 +588,108 @@ export default function DashboardPage() {
                 <p className="text-gray-600">Your saved products and favorites</p>
               </div>
               {wishlistItems.length > 0 && (
-                <Button variant="outline">
+                <Button 
+                  variant="outline"
+                  onClick={handleClearWishlist}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
                   Clear All
                 </Button>
               )}
             </div>
 
-            {wishlistItems.length > 0 ? (
+            {wishlistLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Wishlist items would be rendered here */}
-                <Card className="text-center py-12">
-                  <CardContent>
-                    <Heart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Wishlist Items</h3>
-                    <p className="text-gray-600">
-                      Your wishlist items will appear here
-                    </p>
-                  </CardContent>
-                </Card>
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="w-full h-48 bg-gray-200 rounded-lg mb-4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : wishlistItems.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {wishlistProducts.map((product) => (
+                  <Card key={product.id} className="group hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="relative">
+                        <img
+                          src={product.image_url || '/images/products/placeholder.svg'}
+                          alt={product.name}
+                          className="w-full h-48 object-cover rounded-lg mb-4"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                          onClick={() => handleRemoveFromWishlist(product.id)}
+                        >
+                          <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-gray-900 line-clamp-2">
+                          {product.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {product.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
+                            <span className="text-lg font-bold text-purple-600">
+                              ${product.price.toFixed(2)}
+                            </span>
+                            {product.original_price && product.original_price > product.price && (
+                              <span className="text-sm text-gray-500 line-through">
+                                ${product.original_price.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                          <Badge variant="secondary">
+                            {product.category}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-4 w-4 ${
+                                  i < Math.floor(product.rating)
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {product.rating} ({product.review_count} reviews)
+                          </span>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <Button asChild className="flex-1">
+                            <Link href={`/products/${product.id}`}>
+                              View Product
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleRemoveFromWishlist(product.id)}
+                          >
+                            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : (
               <Card className="text-center py-12">
@@ -502,6 +789,34 @@ export default function DashboardPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* View Order Modal */}
+      <ViewOrderModal
+        order={viewingOrder}
+        open={!!viewingOrder}
+        onOpenChange={(open) => !open && setViewingOrder(null)}
+        onUpdateOrder={(orderId, updates) => {
+          // Handle order updates if needed
+          console.log('Update order:', orderId, updates)
+        }}
+        onStatusUpdate={async (orderId, status, notes) => {
+          try {
+            await updateOrderStatus(orderId, status, notes)
+            // Refresh the orders list to show updated status
+            // The useOrders hook should handle this automatically
+          } catch (error) {
+            console.error('Failed to update order status:', error)
+            throw error
+          }
+        }}
+      />
+
+      {/* Add Address Modal */}
+      <AddAddressModal
+        open={showAddAddressModal}
+        onOpenChange={setShowAddAddressModal}
+        onAddressAdded={handleAddressAdded}
+      />
     </div>
     </AuthenticatedOnly>
   )

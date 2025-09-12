@@ -11,7 +11,7 @@ interface WishlistContextType {
   addToWishlist: (productId: string) => Promise<{ error: Error | null }>
   removeFromWishlist: (productId: string) => Promise<{ error: Error | null }>
   isInWishlist: (productId: string) => boolean
-  getWishlistProducts: () => Product[]
+  getWishlistProducts: () => Promise<Product[]>
   clearWishlist: () => Promise<{ error: Error | null }>
 }
 
@@ -99,10 +99,23 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     return items.some(item => item.product_id === productId)
   }
 
-  const getWishlistProducts = () => {
-    // This would need to be implemented with actual product data
-    // For now, return empty array
-    return []
+  const getWishlistProducts = async (): Promise<Product[]> => {
+    if (!user || items.length === 0) return []
+
+    try {
+      const productIds = items.map(item => item.product_id)
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', productIds)
+
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Error fetching wishlist products:', error)
+      return []
+    }
   }
 
   const clearWishlist = async () => {

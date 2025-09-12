@@ -10,12 +10,14 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Search, Menu, User, Heart, LogOut, LogIn, X, ShoppingBag, User as UserIcon, Settings, Package } from "lucide-react"
 import { Cart } from "./Cart"
 import { useAuth } from "@/hooks/useAuth"
+import { useWishlist } from "@/hooks/useWishlist"
 import { AdminOnly } from "@/components/ProtectedRoute"
 
 import Link from "next/link"
 
 const Header = () => {
   const { user, profile, signOut } = useAuth()
+  const { items: wishlistItems } = useWishlist()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   
@@ -132,6 +134,19 @@ const Header = () => {
                             <UserIcon className="h-5 w-5 text-purple-600" />
                             <span>Dashboard</span>
                           </Link>
+                          <Link 
+                            href="/dashboard?tab=wishlist" 
+                            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                            onClick={closeMobileMenu}
+                          >
+                            <Heart className="h-5 w-5 text-purple-600" />
+                            <span>Wishlist</span>
+                            {wishlistItems.length > 0 && (
+                              <Badge className="ml-auto bg-purple-100 text-purple-600 text-xs">
+                                {wishlistItems.length}
+                              </Badge>
+                            )}
+                          </Link>
                           <AdminOnly>
                             <Link 
                               href="/admin" 
@@ -217,11 +232,15 @@ const Header = () => {
           <div className="flex items-center space-x-2 md:space-x-4">
             {/* Wishlist - Hidden on mobile when menu is open */}
             {!isMobileMenuOpen && (
-              <Button variant="ghost" size="icon" className="relative touch-manipulation">
-                <Heart className="h-5 w-5" />
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
-                  3
-                </Badge>
+              <Button variant="ghost" size="icon" className="relative touch-manipulation" asChild>
+                <Link href="/dashboard?tab=wishlist">
+                  <Heart className="h-5 w-5" />
+                  {wishlistItems.length > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
+                      {wishlistItems.length}
+                    </Badge>
+                  )}
+                </Link>
               </Button>
             )}
 

@@ -2,43 +2,120 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Star, Heart } from "lucide-react"
 import { Product } from "@/lib/supabase"
+import { useAuth } from "@/hooks/useAuth"
+import { useWishlist } from "@/hooks/useWishlist"
 import Link from "next/link"
+import { useState, useEffect } from "react"
 
 interface ProductCardProps {
   product: Product
 }
 
 export const ProductCard = ({ product }: ProductCardProps) => {
+  const { user } = useAuth()
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false)
+  const [isInWishlistState, setIsInWishlistState] = useState(false)
+
+  // Check if product is in wishlist
+  useEffect(() => {
+    setIsInWishlistState(isInWishlist(product.id))
+  }, [product.id, isInWishlist])
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.preventDefault() // Prevent navigation to product page
+    e.stopPropagation()
+    
+    if (!user) return
+
+    setIsWishlistLoading(true)
+    try {
+      if (isInWishlistState) {
+        await removeFromWishlist(product.id)
+        setIsInWishlistState(false)
+      } else {
+        await addToWishlist(product.id)
+        setIsInWishlistState(true)
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error)
+    } finally {
+      setIsWishlistLoading(false)
+    }
+  }
+
   return (
-    <Link href={`/products/${product.id}`}>
-      <Card className="overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 group cursor-pointer bg-white rounded-xl shadow-md hover:scale-105 hover:-translate-y-1">
-        <div className="relative">
-          <div className="aspect-[4/3] bg-white flex items-center justify-center">
-            {product.image_url ? (
-              <img 
-                src={`/images/products${product.image_url.replace('.jpg', '.svg')}`}
-                alt={product.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            ) : (
-              <div className="h-16 w-16 text-gray-400" />
-            )}
+    <TooltipProvider>
+      <Card className="overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 group cursor-pointer bg-white rounded-xl shadow-md hover:scale-105 hover:-translate-y-1 relative">
+        <Link href={`/products/${product.id}`}>
+          <div className="relative">
+            <div className="aspect-[4/3] bg-white flex items-center justify-center">
+              {product.image_url ? (
+                <img 
+                  src={`/images/products${product.image_url.replace('.jpg', '.svg')}`}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <div className="h-16 w-16 text-gray-400" />
+              )}
+            </div>
+            
+            {/* Badges */}
+            <div className="absolute top-2 left-2 flex flex-col gap-1">
+              {product.is_new && (
+                <Badge className="bg-green-500 text-white text-xs">New</Badge>
+              )}
+              {product.is_on_sale && (
+                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm">
+                  SALE
+                </Badge>
+              )}
+            </div>
+
+            {/* Wishlist Button */}
+            <div className="absolute top-2 right-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {user ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 rounded-full bg-white/80 hover:bg-white shadow-sm transition-all duration-200 ${
+                        isWishlistLoading ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                      onClick={handleWishlistToggle}
+                      disabled={isWishlistLoading}
+                    >
+                      <Heart 
+                        className={`h-4 w-4 transition-colors duration-200 ${
+                          isInWishlistState 
+                            ? 'fill-red-500 text-red-500' 
+                            : 'text-gray-600 hover:text-red-500'
+                        }`} 
+                      />
+                    </Button>
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-white/80 shadow-sm flex items-center justify-center cursor-not-allowed opacity-50">
+                      <Heart className="h-4 w-4 text-gray-600" />
+                    </div>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>
+                  {user ? (
+                    isInWishlistState ? 'Remove from wishlist' : 'Add to wishlist'
+                  ) : (
+                    'Sign in to add to wishlist'
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-          
-          {/* Badges */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1">
-            {product.is_new && (
-              <Badge className="bg-green-500 text-white text-xs">New</Badge>
-            )}
-            {product.is_on_sale && (
-              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm">
-                SALE
-              </Badge>
-            )}
-          </div>
-        </div>
+        </Link>
 
         <CardHeader className="pb-2 text-left">
           <div className="flex items-start gap-2">
@@ -92,6 +169,6 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           </div>
         </CardContent>
       </Card>
-    </Link>
+    </TooltipProvider>
   )
 }
