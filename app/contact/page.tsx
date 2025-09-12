@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MessageCircle, Clock, Truck, Shield } from "lucide-react"
+import { MessageCircle, Clock, Truck, Shield, Mail } from "lucide-react"
 
 export default function ContactPage() {
   const handleWhatsAppClick = () => {
@@ -33,23 +33,54 @@ export default function ContactPage() {
                   Get in Touch
                 </CardTitle>
                 <CardDescription>
-                  We&apos;re available via WhatsApp for quick responses
+                  We&apos;re available via phone calls and WhatsApp for quick responses
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900 mb-2">876 287 3324</div>
-                  <p className="text-gray-600 mb-4">WhatsApp Business</p>
-                  <Button 
-                    onClick={handleWhatsAppClick}
-                    className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 text-lg"
-                  >
-                    <MessageCircle className="h-5 w-5 mr-2" />
-                    Chat on WhatsApp
-                  </Button>
+                  <p className="text-gray-600 mb-4">Phone & WhatsApp Business</p>
+                  <div className="flex gap-3 justify-center">
+                    <Button 
+                      onClick={handleWhatsAppClick}
+                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-3"
+                    >
+                      <MessageCircle className="h-5 w-5 mr-2" />
+                      WhatsApp
+                    </Button>
+                    <Button 
+                      onClick={() => window.open('tel:+18762873324', '_self')}
+                      variant="outline"
+                      className="border-green-500 text-green-600 hover:bg-green-50 px-6 py-3"
+                    >
+                      <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      Call
+                    </Button>
+                  </div>
                 </div>
+                
+                <div className="border-t pt-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Mail className="h-5 w-5 text-purple-500" />
+                      <span className="text-lg font-semibold text-gray-900">Email Support</span>
+                    </div>
+                    <div className="text-lg text-purple-600 font-medium mb-2">gemshairstoreandmore@gmail.com</div>
+                    <Button 
+                      onClick={() => window.open('mailto:gemshairstoreandmore@gmail.com', '_blank')}
+                      variant="outline"
+                      className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Send Email
+                    </Button>
+                  </div>
+                </div>
+                
                 <div className="text-sm text-gray-500 text-center">
-                  <p>Available for orders, support, and product inquiries</p>
+                  <p>Available for orders, support, and product inquiries via calls or WhatsApp</p>
                 </div>
               </CardContent>
             </Card>
