@@ -66,30 +66,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (event === 'SIGNED_IN' && session?.user) {
-            setState(prev => ({ ...prev, user: session.user }))
-            // Load profile and addresses in parallel, but don't fail if they error
-            await Promise.allSettled([
-              loadUserProfile(session.user.id),
-              loadUserAddresses(session.user.id)
-            ])
-            // Note: Cart syncing will be handled by the CartProvider
-          } else if (event === 'SIGNED_OUT') {
-            setState({
-              user: null,
-              profile: null,
-              addresses: [],
-              role: null,
-              loading: false
-            })
-          }
-        } catch (error) {
-          console.warn('Error handling auth state change:', error)
-        } finally {
-          setState(prev => ({ ...prev, loading: false }))
+      (event, session) => {
+        // ✅ SYNCHRONOUS CALLBACK - No deadlock risk
+        if (event === 'SIGNED_IN' && session?.user) {
+          setState(prev => ({ ...prev, user: session.user }))
+          // Dispatch async operations without awaiting
+          Promise.allSettled([
+            loadUserProfile(session.user.id),
+            loadUserAddresses(session.user.id)
+          ]).catch(error => {
+            console.warn('Error loading user data after sign in:', error)
+          })
+        } else if (event === 'SIGNED_OUT') {
+          setState({
+            user: null,
+            profile: null,
+            addresses: [],
+            role: null,
+            loading: false
+          })
         }
+        setState(prev => ({ ...prev, loading: false }))
       }
     )
 

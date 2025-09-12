@@ -5,39 +5,27 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Users, Package, Calendar, BarChart3 } from "lucide-react"
+import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Users, Package, Calendar, BarChart3, Download, RefreshCw } from "lucide-react"
+import { useAnalytics } from "@/hooks/useAnalytics"
+import { AnalyticsFilters } from "@/lib/analyticsService"
 
 export function AdminAnalytics() {
-  const [timeRange, setTimeRange] = useState("30d")
+  const [timeRange, setTimeRange] = useState<AnalyticsFilters['timeRange']>("30d")
   const [selectedMetric, setSelectedMetric] = useState("revenue")
+  const [isExporting, setIsExporting] = useState(false)
 
-  // Mock analytics data - in a real app, this would come from Supabase
-  const mockAnalytics = {
-    revenue: {
-      current: 45678.90,
-      previous: 38945.67,
-      change: 17.3,
-      trend: "up"
-    },
-    orders: {
-      current: 156,
-      previous: 134,
-      change: 16.4,
-      trend: "up"
-    },
-    customers: {
-      current: 89,
-      previous: 76,
-      change: 17.1,
-      trend: "up"
-    },
-    products: {
-      current: 24,
-      previous: 22,
-      change: 9.1,
-      trend: "up"
-    }
-  }
+  // Use real analytics data from Supabase
+  const {
+    analyticsData,
+    revenueData,
+    topProducts,
+    customerSegments,
+    recentActivity,
+    loading,
+    error,
+    refresh,
+    setFilters
+  } = useAnalytics({ timeRange })
 
   const timeRanges = [
     { value: "7d", label: "Last 7 days" },
@@ -53,8 +41,46 @@ export function AdminAnalytics() {
     { value: "products", label: "Products", icon: Package }
   ]
 
+  const handleTimeRangeChange = (value: string) => {
+    setTimeRange(value as AnalyticsFilters['timeRange'])
+    setFilters({ timeRange: value as AnalyticsFilters['timeRange'] })
+  }
+
+  const handleExportReport = async () => {
+    setIsExporting(true)
+    try {
+      // Create analytics report data
+      const reportData = {
+        timeRange,
+        generatedAt: new Date().toISOString(),
+        analytics: analyticsData,
+        revenueData,
+        topProducts,
+        customerSegments,
+        recentActivity
+      }
+      
+      // Convert to JSON and download
+      const dataStr = JSON.stringify(reportData, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `analytics-report-${timeRange}-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting report:', error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const getMetricData = (metric: string) => {
-    return mockAnalytics[metric as keyof typeof mockAnalytics]
+    if (!analyticsData) return { current: 0, previous: 0, change: 0, trend: 'up' as const }
+    return analyticsData[metric as keyof typeof analyticsData]
   }
 
   const getTrendIcon = (trend: string) => {
@@ -69,44 +95,36 @@ export function AdminAnalytics() {
     return trend === "up" ? "text-green-600" : "text-red-600"
   }
 
-  // Mock chart data
-  const revenueData = [
-    { month: "Jan", revenue: 12500, orders: 45 },
-    { month: "Feb", revenue: 13800, orders: 52 },
-    { month: "Mar", revenue: 14200, orders: 58 },
-    { month: "Apr", revenue: 15600, orders: 64 },
-    { month: "May", revenue: 16800, orders: 71 },
-    { month: "Jun", revenue: 18200, orders: 78 },
-    { month: "Jul", revenue: 19500, orders: 85 },
-    { month: "Aug", revenue: 20800, orders: 92 },
-    { month: "Sep", revenue: 22100, orders: 99 },
-    { month: "Oct", revenue: 23400, orders: 106 },
-    { month: "Nov", revenue: 24700, orders: 113 },
-    { month: "Dec", revenue: 26000, orders: 120 }
-  ]
+  // Loading and error states
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600">Loading analytics data...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  const topProducts = [
-    { name: "Nourishing Hair Mask", sales: 234, revenue: 5841.66 },
-    { name: "Volumizing Shampoo", sales: 189, revenue: 3589.11 },
-    { name: "Heat Protection Spray", sales: 156, revenue: 3586.44 },
-    { name: "Professional Hair Dryer", sales: 45, revenue: 4049.55 },
-    { name: "Styling Gel", sales: 123, revenue: 2090.77 }
-  ]
-
-  const customerSegments = [
-    { segment: "New Customers", count: 23, percentage: 25.8 },
-    { segment: "Returning Customers", count: 45, percentage: 50.6 },
-    { segment: "VIP Customers", count: 12, percentage: 13.5 },
-    { segment: "Inactive Customers", count: 9, percentage: 10.1 }
-  ]
-
-  const recentActivity = [
-    { action: "New order placed", details: "ORD-2024-001 by Sarah Johnson", time: "2 hours ago", type: "order" },
-    { action: "Product restocked", details: "Heat Protection Spray - 50 units", time: "4 hours ago", type: "inventory" },
-    { action: "New customer registered", details: "Emily Rodriguez", time: "6 hours ago", type: "customer" },
-    { action: "Payment received", details: "ORD-2024-002 - $156.85", time: "8 hours ago", type: "payment" },
-    { action: "Order shipped", details: "ORD-2024-003 to Chicago", time: "1 day ago", type: "shipping" }
-  ]
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="text-red-600 mb-4">Error loading analytics</div>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={refresh} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -128,7 +146,11 @@ export function AdminAnalytics() {
           <p className="text-gray-600">Track your business performance and trends</p>
         </div>
         <div className="flex gap-2">
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Button variant="outline" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Select value={timeRange} onValueChange={handleTimeRangeChange}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -140,8 +162,9 @@ export function AdminAnalytics() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline">
-            Export Report
+          <Button variant="outline" onClick={handleExportReport} disabled={isExporting || loading}>
+            <Download className="h-4 w-4 mr-2" />
+            {isExporting ? 'Exporting...' : 'Export Report'}
           </Button>
         </div>
       </div>
@@ -186,10 +209,10 @@ export function AdminAnalytics() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="text-2xl font-bold">
-                  ${revenueData[revenueData.length - 1].revenue.toLocaleString()}
+                  ${revenueData.length > 0 ? revenueData[revenueData.length - 1].revenue.toLocaleString() : '0'}
                 </div>
-                <Badge variant="outline" className="text-green-600 border-green-200">
-                  +12.5% from last month
+                <Badge variant="outline" className={`${analyticsData?.revenue.trend === 'up' ? 'text-green-600 border-green-200' : 'text-red-600 border-red-200'}`}>
+                  {analyticsData?.revenue.change ? `${analyticsData.revenue.change > 0 ? '+' : ''}${analyticsData.revenue.change}%` : '0%'} from previous period
                 </Badge>
               </div>
               <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
@@ -206,11 +229,13 @@ export function AdminAnalytics() {
                 </div>
                 <div>
                   <div className="text-gray-600">Avg Monthly</div>
-                  <div className="font-medium">${Math.round(revenueData.reduce((sum, d) => sum + d.revenue, 0) / revenueData.length).toLocaleString()}</div>
+                  <div className="font-medium">${revenueData.length > 0 ? Math.round(revenueData.reduce((sum, d) => sum + d.revenue, 0) / revenueData.length).toLocaleString() : '0'}</div>
                 </div>
                 <div>
                   <div className="text-gray-600">Growth Rate</div>
-                  <div className="font-medium text-green-600">+17.3%</div>
+                  <div className={`font-medium ${analyticsData?.revenue.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                    {analyticsData?.revenue.change ? `${analyticsData.revenue.change > 0 ? '+' : ''}${analyticsData.revenue.change}%` : '0%'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,10 +252,10 @@ export function AdminAnalytics() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="text-2xl font-bold">
-                  {revenueData[revenueData.length - 1].orders}
+                  {revenueData.length > 0 ? revenueData[revenueData.length - 1].orders : '0'}
                 </div>
-                <Badge variant="outline" className="text-blue-600 border-blue-200">
-                  +8.2% from last month
+                <Badge variant="outline" className={`${analyticsData?.orders.trend === 'up' ? 'text-blue-600 border-blue-200' : 'text-red-600 border-red-200'}`}>
+                  {analyticsData?.orders.change ? `${analyticsData.orders.change > 0 ? '+' : ''}${analyticsData.orders.change}%` : '0%'} from previous period
                 </Badge>
               </div>
               <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
@@ -247,11 +272,13 @@ export function AdminAnalytics() {
                 </div>
                 <div>
                   <div className="text-gray-600">Avg Monthly</div>
-                  <div className="font-medium">{Math.round(revenueData.reduce((sum, d) => sum + d.orders, 0) / revenueData.length)}</div>
+                  <div className="font-medium">{revenueData.length > 0 ? Math.round(revenueData.reduce((sum, d) => sum + d.orders, 0) / revenueData.length) : '0'}</div>
                 </div>
                 <div>
                   <div className="text-gray-600">Growth Rate</div>
-                  <div className="font-medium text-blue-600">+16.4%</div>
+                  <div className={`font-medium ${analyticsData?.orders.trend === 'up' ? 'text-blue-600' : 'text-red-600'}`}>
+                    {analyticsData?.orders.change ? `${analyticsData.orders.change > 0 ? '+' : ''}${analyticsData.orders.change}%` : '0%'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -269,22 +296,29 @@ export function AdminAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topProducts.map((product, index) => (
-                <div key={product.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-medium">
-                      {index + 1}
+              {topProducts.length > 0 ? (
+                topProducts.map((product, index) => (
+                  <div key={product.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-medium">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">{product.name}</div>
+                        <div className="text-xs text-gray-600">{product.sales} units sold</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-sm">{product.name}</div>
-                      <div className="text-xs text-gray-600">{product.sales} units sold</div>
+                    <div className="text-right">
+                      <div className="font-medium">${product.revenue.toFixed(2)}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium">${product.revenue.toFixed(2)}</div>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  <Package className="h-8 w-8 mx-auto mb-2" />
+                  <p>No product sales data available</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -297,21 +331,28 @@ export function AdminAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {customerSegments.map(segment => (
-                <div key={segment.segment} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>{segment.segment}</span>
-                    <span className="font-medium">{segment.count}</span>
+              {customerSegments.length > 0 ? (
+                customerSegments.map(segment => (
+                  <div key={segment.segment} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>{segment.segment}</span>
+                      <span className="font-medium">{segment.count}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full" 
+                        style={{ width: `${segment.percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-600">{segment.percentage}%</div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full" 
-                      style={{ width: `${segment.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-600">{segment.percentage}%</div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  <Users className="h-8 w-8 mx-auto mb-2" />
+                  <p>No customer data available</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -324,18 +365,25 @@ export function AdminAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="mt-1">
-                    {getActivityIcon(activity.type)}
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-3">
+                    <div className="mt-1">
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{activity.action}</div>
+                      <div className="text-xs text-gray-600">{activity.details}</div>
+                      <div className="text-xs text-gray-500">{activity.time}</div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">{activity.action}</div>
-                    <div className="text-xs text-gray-600">{activity.details}</div>
-                    <div className="text-xs text-gray-500">{activity.time}</div>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  <BarChart3 className="h-8 w-8 mx-auto mb-2" />
+                  <p>No recent activity</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -350,19 +398,27 @@ export function AdminAnalytics() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">+17.3%</div>
+              <div className={`text-2xl font-bold ${analyticsData?.revenue.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                {analyticsData?.revenue.change ? `${analyticsData.revenue.change > 0 ? '+' : ''}${analyticsData.revenue.change}%` : '0%'}
+              </div>
               <div className="text-sm text-gray-600">Revenue Growth</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">+16.4%</div>
+              <div className={`text-2xl font-bold ${analyticsData?.orders.trend === 'up' ? 'text-blue-600' : 'text-red-600'}`}>
+                {analyticsData?.orders.change ? `${analyticsData.orders.change > 0 ? '+' : ''}${analyticsData.orders.change}%` : '0%'}
+              </div>
               <div className="text-sm text-gray-600">Order Growth</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">+17.1%</div>
+              <div className={`text-2xl font-bold ${analyticsData?.customers.trend === 'up' ? 'text-purple-600' : 'text-red-600'}`}>
+                {analyticsData?.customers.change ? `${analyticsData.customers.change > 0 ? '+' : ''}${analyticsData.customers.change}%` : '0%'}
+              </div>
               <div className="text-sm text-gray-600">Customer Growth</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">+9.1%</div>
+              <div className={`text-2xl font-bold ${analyticsData?.products.trend === 'up' ? 'text-orange-600' : 'text-red-600'}`}>
+                {analyticsData?.products.change ? `${analyticsData.products.change > 0 ? '+' : ''}${analyticsData.products.change}%` : '0%'}
+              </div>
               <div className="text-sm text-gray-600">Product Growth</div>
             </div>
           </div>
@@ -370,9 +426,15 @@ export function AdminAnalytics() {
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">💡 Business Insight</h4>
             <p className="text-sm text-blue-800">
-              Your store is showing strong growth across all key metrics. Revenue is up 17.3% with 
-              increasing customer acquisition and order volume. Consider expanding your product line 
-              and implementing customer retention strategies to maintain this momentum.
+              {analyticsData ? (
+                `Your store is showing ${analyticsData.revenue.trend === 'up' ? 'strong growth' : 'some challenges'} across key metrics. ` +
+                `Revenue is ${analyticsData.revenue.trend === 'up' ? 'up' : 'down'} ${analyticsData.revenue.change}% with ` +
+                `${analyticsData.customers.trend === 'up' ? 'increasing' : 'decreasing'} customer acquisition and ` +
+                `${analyticsData.orders.trend === 'up' ? 'growing' : 'declining'} order volume. ` +
+                `${analyticsData.revenue.trend === 'up' ? 'Consider expanding your product line and implementing customer retention strategies to maintain this momentum.' : 'Focus on customer acquisition and product optimization to improve performance.'}`
+              ) : (
+                'Loading business insights...'
+              )}
             </p>
           </div>
         </CardContent>

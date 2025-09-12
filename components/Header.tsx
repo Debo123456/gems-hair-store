@@ -100,15 +100,7 @@ const Header = () => {
                       <span className="font-medium">Track Order</span>
                     </Link>
                     <Link 
-                      href="#" 
-                      className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                      onClick={closeMobileMenu}
-                    >
-                      <Package className="h-5 w-5 text-purple-600" />
-                      <span className="font-medium">About</span>
-                    </Link>
-                    <Link 
-                      href="#" 
+                      href="/contact" 
                       className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
                       onClick={closeMobileMenu}
                     >
@@ -179,7 +171,13 @@ const Header = () => {
                 </div>
               </SheetContent>
             </Sheet>
-            <h1 className="text-xl md:text-2xl font-bold text-purple-600">Gems Hair</h1>
+            <Link href="/" className="flex items-center">
+              <img 
+                src="/images/logo/logo.png" 
+                alt="Gems Hair" 
+                className="h-8 md:h-10 w-auto"
+              />
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
@@ -193,10 +191,7 @@ const Header = () => {
             <Link href="/orders/track" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
               Track Order
             </Link>
-            <Link href="#" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
-              About
-            </Link>
-            <Link href="#" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
+            <Link href="/contact" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
               Contact
             </Link>
             <AdminOnly>
@@ -224,7 +219,7 @@ const Header = () => {
             {!isMobileMenuOpen && (
               <Button variant="ghost" size="icon" className="relative touch-manipulation">
                 <Heart className="h-5 w-5" />
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs">
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
                   3
                 </Badge>
               </Button>

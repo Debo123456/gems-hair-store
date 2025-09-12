@@ -438,6 +438,74 @@ export class CustomerService {
   }
 
   /**
+   * Create a new customer
+   */
+  static async createCustomer(customerData: {
+    name: string
+    email: string
+    phone?: string
+    location?: string
+    notes?: string
+  }): Promise<Customer> {
+    try {
+      // First, create a user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: customerData.email,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: {
+          full_name: customerData.name,
+          phone: customerData.phone,
+          location: customerData.location,
+          notes: customerData.notes
+        }
+      })
+
+      if (authError) {
+        throw new Error(`Failed to create user: ${authError.message}`)
+      }
+
+      if (!authData.user) {
+        throw new Error('Failed to create user account')
+      }
+
+      // Create user profile
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({
+          id: authData.user.id,
+          email: customerData.email,
+          full_name: customerData.name,
+          role: 'customer',
+          phone: customerData.phone,
+          location: customerData.location,
+          notes: customerData.notes
+        })
+
+      if (profileError) {
+        console.warn('Failed to create user profile:', profileError)
+        // Don't throw error here as the user was created successfully
+      }
+
+      // Return the created customer
+      return {
+        id: authData.user.id,
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        joinDate: new Date().toISOString(),
+        totalOrders: 0,
+        totalSpent: 0,
+        status: 'inactive',
+        location: customerData.location,
+        role: 'customer'
+      }
+    } catch (error) {
+      console.error('Error creating customer:', error)
+      throw error
+    }
+  }
+
+  /**
    * Search customers
    */
   static async searchCustomers(

@@ -25,6 +25,21 @@ export const metadata: Metadata = {
   title: "Gems Hair Store - Premium Hair Care Products",
   description: "Discover premium quality hair care products designed to enhance your natural beauty. From nourishing treatments to styling essentials.",
   keywords: "hair care, hair products, hair treatment, styling products, beauty",
+  icons: {
+    icon: [
+      { url: "/images/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/images/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/favicon/favicon.ico", sizes: "any" }
+    ],
+    apple: [
+      { url: "/images/favicon/apple-touch-icon.png", sizes: "180x180", type: "image/png" }
+    ],
+    other: [
+      { url: "/images/favicon/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/images/favicon/android-chrome-512x512.png", sizes: "512x512", type: "image/png" }
+    ]
+  },
+  manifest: "/images/favicon/site.webmanifest"
 }
 
 export default function RootLayout({

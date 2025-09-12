@@ -36,6 +36,8 @@ export function ProductManagement() {
     total,
     page,
     totalPages,
+    stats,
+    statsLoading,
     refresh,
     deleteProduct,
     deleteProducts,
@@ -79,13 +81,15 @@ export function ProductManagement() {
     setShowBulkDelete(true)
   }
 
-  const handleBulkDeleteConfirm = async () => {
+  const handleBulkDeleteConfirm = async (ids: string[]) => {
+    console.log("Bulk delete confirmed for products:", ids)
     try {
-      await deleteProducts(selectedProducts)
+      await deleteProducts(ids)
       setSelectedProducts([])
-      setShowBulkDelete(false)
+      console.log("Products deleted successfully")
     } catch (error) {
       console.error("Failed to delete products:", error)
+      throw error // Re-throw so the dialog can handle the error
     }
   }
 
@@ -126,6 +130,54 @@ export function ProductManagement() {
           </Button>
           <AddProductModal onProductAdded={refresh} />
         </div>
+      </div>
+
+      {/* Product Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {statsLoading ? "..." : stats?.total || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {statsLoading ? "Loading..." : "All products"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {statsLoading ? "..." : stats?.lowStock || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {statsLoading ? "Loading..." : "Products running low"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Out of Stock</CardTitle>
+            <Tag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {statsLoading ? "..." : stats?.outOfStock || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {statsLoading ? "Loading..." : "Need restocking"}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search and Filters */}
@@ -188,10 +240,6 @@ export function ProductManagement() {
                 {selectedProducts.length} product(s) selected
               </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Selected
-                </Button>
                 <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Selected
@@ -424,7 +472,7 @@ export function ProductManagement() {
         productNames={selectedProducts.map(id => products.find(p => p.id === id)?.name || 'Unknown').filter(Boolean)}
         open={showBulkDelete}
         onOpenChange={setShowBulkDelete}
-        onProductsDeleted={handleBulkDeleteConfirm}
+        onDeleteProducts={handleBulkDeleteConfirm}
       />
     </div>
   )

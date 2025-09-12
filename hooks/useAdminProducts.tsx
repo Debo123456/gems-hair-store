@@ -13,6 +13,16 @@ interface UseAdminProductsOptions {
   sortOrder?: 'asc' | 'desc'
 }
 
+interface ProductStats {
+  total: number
+  inStock: number
+  outOfStock: number
+  lowStock: number
+  new: number
+  featured: number
+  onSale: number
+}
+
 interface UseAdminProductsReturn {
   products: AdminProduct[]
   loading: boolean
@@ -20,6 +30,8 @@ interface UseAdminProductsReturn {
   total: number
   page: number
   totalPages: number
+  stats: ProductStats | null
+  statsLoading: boolean
   refresh: () => Promise<void>
   createProduct: (data: CreateProductData) => Promise<void>
   updateProduct: (data: UpdateProductData) => Promise<void>
@@ -35,6 +47,8 @@ export function useAdminProducts(initialOptions: UseAdminProductsOptions = {}): 
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(initialOptions.page || 1)
   const [totalPages, setTotalPages] = useState(0)
+  const [stats, setStats] = useState<ProductStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
   const [options, setOptions] = useState<UseAdminProductsOptions>({
     limit: 20,
     sortBy: 'created_at',
@@ -60,8 +74,20 @@ export function useAdminProducts(initialOptions: UseAdminProductsOptions = {}): 
     }
   }
 
+  const fetchStats = async () => {
+    setStatsLoading(true)
+    try {
+      const statsData = await AdminProductService.getProductStats()
+      setStats(statsData)
+    } catch (err) {
+      console.error('Error fetching product stats:', err)
+    } finally {
+      setStatsLoading(false)
+    }
+  }
+
   const refresh = async () => {
-    await fetchProducts()
+    await Promise.all([fetchProducts(), fetchStats()])
   }
 
   const createProduct = async (data: CreateProductData) => {
@@ -95,10 +121,16 @@ export function useAdminProducts(initialOptions: UseAdminProductsOptions = {}): 
   }
 
   const deleteProducts = async (ids: string[]) => {
+    console.log("useAdminProducts: deleteProducts called with IDs:", ids)
     try {
+      console.log("useAdminProducts: Calling AdminProductService.deleteProducts")
       await AdminProductService.deleteProducts(ids)
+      console.log("useAdminProducts: AdminProductService.deleteProducts completed successfully")
+      console.log("useAdminProducts: Refreshing product list")
       await refresh() // Refresh the list
+      console.log("useAdminProducts: Product list refreshed")
     } catch (err) {
+      console.error("useAdminProducts: Error in deleteProducts:", err)
       setError(err instanceof Error ? err.message : 'Failed to delete products')
       throw err
     }
@@ -110,6 +142,7 @@ export function useAdminProducts(initialOptions: UseAdminProductsOptions = {}): 
 
   useEffect(() => {
     fetchProducts()
+    fetchStats()
   }, [options])
 
   return {
@@ -119,6 +152,8 @@ export function useAdminProducts(initialOptions: UseAdminProductsOptions = {}): 
     total,
     page,
     totalPages,
+    stats,
+    statsLoading,
     refresh,
     createProduct,
     updateProduct,

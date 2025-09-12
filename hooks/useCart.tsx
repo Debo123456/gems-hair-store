@@ -138,10 +138,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Listen for auth state changes to sync cart when user signs in
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        // ✅ SYNCHRONOUS CALLBACK - No deadlock risk
         if (event === 'SIGNED_IN' && session?.user) {
           // User just signed in, sync local cart with Supabase
-          await syncLocalCartWithSupabase(session.user.id)
+          syncLocalCartWithSupabase(session.user.id).catch(error => {
+            console.warn('Error syncing cart after sign in:', error)
+          })
         } else if (event === 'SIGNED_OUT') {
           // User signed out, clear cart and load from localStorage
           dispatch({ type: 'CLEAR_CART' })

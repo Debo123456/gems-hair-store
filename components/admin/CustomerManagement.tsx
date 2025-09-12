@@ -8,14 +8,18 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Filter, Eye, Mail, Phone, MapPin, DollarSign, Star, Users, CheckCircle } from "lucide-react"
+import { Search, Filter, Eye, Mail, Phone, MapPin, DollarSign, Star, Users, CheckCircle, TrendingUp } from "lucide-react"
 import { useCustomers } from "@/hooks/useCustomers"
 import { Customer } from "@/lib/customerService"
+import { AddCustomerModal } from "./AddCustomerModal"
+import { exportCustomersToCSV } from "@/lib/exportUtils"
 
 export function CustomerManagement() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
     // Use real customer data from the database
   const { 
@@ -24,99 +28,13 @@ export function CustomerManagement() {
     error, 
     total,
     setFilters,
-    searchCustomers
+    searchCustomers,
+    refresh
   } = useCustomers({
     initialPage: 1,
     initialLimit: 20
   })
 
-  // Mock customers data for fallback - in a real app, this would come from Supabase
-  const mockCustomers: Customer[] = [
-    {
-      id: "1",
-      name: "Sarah Johnson",
-      email: "sarah.j@email.com",
-      phone: "+1 (555) 123-4567",
-      joinDate: "2023-03-15",
-      totalOrders: 12,
-      totalSpent: 456.78,
-      lastOrderDate: "2024-01-15",
-      status: "vip",
-      location: "New York, NY",
-      avatar: "/avatars/sarah.jpg",
-      role: "customer"
-    },
-    {
-      id: "2",
-      name: "Michael Chen",
-      email: "mchen@email.com",
-      phone: "+1 (555) 234-5678",
-      joinDate: "2023-06-22",
-      totalOrders: 8,
-      totalSpent: 289.45,
-      lastOrderDate: "2024-01-14",
-      status: "active",
-      location: "Los Angeles, CA",
-      avatar: "/avatars/michael.jpg",
-      role: "customer"
-    },
-    {
-      id: "3",
-      name: "Emily Rodriguez",
-      email: "emily.r@email.com",
-      phone: "+1 (555) 345-6789",
-      joinDate: "2023-09-08",
-      totalOrders: 5,
-      totalSpent: 156.92,
-      lastOrderDate: "2024-01-13",
-      status: "active",
-      location: "Chicago, IL",
-      avatar: "/avatars/emily.jpg",
-      role: "customer"
-    },
-    {
-      id: "4",
-      name: "David Thompson",
-      email: "dthompson@email.com",
-      phone: "+1 (555) 456-7890",
-      joinDate: "2023-11-12",
-      totalOrders: 3,
-      totalSpent: 89.97,
-      lastOrderDate: "2024-01-12",
-      status: "active",
-      location: "Miami, FL",
-      avatar: "/avatars/david.jpg",
-      role: "customer"
-    },
-    {
-      id: "5",
-      name: "Lisa Wang",
-      email: "lisa.wang@email.com",
-      phone: "+1 (555) 567-8901",
-      joinDate: "2023-02-28",
-      totalOrders: 18,
-      totalSpent: 892.34,
-      lastOrderDate: "2024-01-10",
-      status: "vip",
-      location: "San Francisco, CA",
-      avatar: "/avatars/lisa.jpg",
-      role: "customer"
-    },
-    {
-      id: "6",
-      name: "James Wilson",
-      email: "jwilson@email.com",
-      phone: "+1 (555) 678-9012",
-      joinDate: "2023-07-15",
-      totalOrders: 0,
-      totalSpent: 0,
-      lastOrderDate: "Never",
-      status: "inactive",
-      location: "Seattle, WA",
-      avatar: "/avatars/james.jpg",
-      role: "customer"
-    }
-  ]
 
   const statuses = ["all", "active", "inactive", "vip"]
 
@@ -163,6 +81,28 @@ export function CustomerManagement() {
     }
   }
 
+  const handleAddCustomer = () => {
+    setShowAddCustomerModal(true)
+  }
+
+  const handleCustomerAdded = () => {
+    // Refresh the customer list
+    refresh()
+    setShowAddCustomerModal(false)
+  }
+
+  const handleExportCustomers = async () => {
+    setIsExporting(true)
+    try {
+      // Export current customers (you can enhance this to get all customers if needed)
+      exportCustomersToCSV(displayCustomers)
+    } catch (error) {
+      console.error('Error exporting customers:', error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const getStatusBadge = (status: Customer['status']) => {
     switch (status) {
       case 'active': return <Badge variant="default">Active</Badge>
@@ -197,10 +137,14 @@ export function CustomerManagement() {
           <p className="text-gray-600">Manage customer relationships and insights</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            Export Customers
+          <Button 
+            variant="outline" 
+            onClick={handleExportCustomers}
+            disabled={isExporting || displayCustomers.length === 0}
+          >
+            {isExporting ? 'Exporting...' : 'Export Customers'}
           </Button>
-          <Button>
+          <Button onClick={handleAddCustomer}>
             Add Customer
           </Button>
         </div>
@@ -214,9 +158,9 @@ export function CustomerManagement() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockCustomers.length}</div>
+            <div className="text-2xl font-bold">{total}</div>
             <p className="text-xs text-muted-foreground">
-              +12 from last month
+              {loading ? "Loading..." : "Registered customers"}
             </p>
           </CardContent>
         </Card>
@@ -228,10 +172,10 @@ export function CustomerManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockCustomers.filter(c => c.status === 'active' || c.status === 'vip').length}
+              {displayCustomers.filter(c => c.status === 'active' || c.status === 'vip').length}
             </div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((mockCustomers.filter(c => c.status === 'active' || c.status === 'vip').length / mockCustomers.length) * 100)}% of total
+              Recent activity
             </p>
           </CardContent>
         </Card>
@@ -243,7 +187,7 @@ export function CustomerManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockCustomers.filter(c => c.status === 'vip').length}
+              {displayCustomers.filter(c => c.status === 'vip').length}
             </div>
             <p className="text-xs text-muted-foreground">
               High-value customers
@@ -253,15 +197,20 @@ export function CustomerManagement() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">New This Month</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${(mockCustomers.reduce((sum, c) => sum + c.totalSpent, 0) / mockCustomers.filter(c => c.totalOrders > 0).length).toFixed(2)}
+              {displayCustomers.filter(c => {
+                const joinDate = new Date(c.joinDate)
+                const now = new Date()
+                const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+                return joinDate >= thisMonth
+              }).length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Per customer
+              Recent signups
             </p>
           </CardContent>
         </Card>
@@ -494,6 +443,11 @@ export function CustomerManagement() {
                 </div>
               )
             })}
+            {displayCustomers.length === 0 && (
+              <div className="text-center text-gray-500 text-sm py-4">
+                No customer data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -503,7 +457,7 @@ export function CustomerManagement() {
             <CardDescription>Highest spending customers</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {mockCustomers
+            {displayCustomers
               .filter(c => c.totalSpent > 0)
               .sort((a, b) => b.totalSpent - a.totalSpent)
               .slice(0, 5)
@@ -518,6 +472,11 @@ export function CustomerManagement() {
                   <span className="text-sm font-medium">${customer.totalSpent.toFixed(2)}</span>
                 </div>
               ))}
+            {displayCustomers.filter(c => c.totalSpent > 0).length === 0 && (
+              <div className="text-center text-gray-500 text-sm py-4">
+                No customers with orders yet
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -536,6 +495,13 @@ export function CustomerManagement() {
           </Button>
         </div>
       </div>
+
+      {/* Add Customer Modal */}
+      <AddCustomerModal
+        open={showAddCustomerModal}
+        onOpenChange={setShowAddCustomerModal}
+        onCustomerAdded={handleCustomerAdded}
+      />
     </div>
   )
 }

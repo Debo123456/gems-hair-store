@@ -8,14 +8,16 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Search, Filter, Eye, Truck, CheckCircle, Clock, AlertCircle, Package } from "lucide-react"
+import { Search, Filter, Eye, Truck, CheckCircle, Clock, AlertCircle, Package, ShoppingCart } from "lucide-react"
 import { useOrders } from "@/hooks/useOrders"
 import { Order, OrderStatus, ORDER_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from "@/lib/orderTypes"
+import { ViewOrderModal } from "./ViewOrderModal"
 
 export function OrderManagement() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null)
 
   // Use real order data from the database
   const { 
@@ -87,6 +89,10 @@ export function OrderManagement() {
     }
   }
 
+  const handleViewOrder = (order: Order) => {
+    setViewingOrder(order)
+  }
+
   const getStatusColor = (status: string) => {
     const config = ORDER_STATUS_CONFIG[status as keyof typeof ORDER_STATUS_CONFIG]
     if (!config) return 'default'
@@ -139,6 +145,67 @@ export function OrderManagement() {
             Create Order
           </Button>
         </div>
+      </div>
+
+      {/* Order Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{total}</div>
+            <p className="text-xs text-muted-foreground">
+              {loading ? "Loading..." : "All time orders"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {displayOrders.filter(o => o.status === 'pending').length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Need attention
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Processing</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {displayOrders.filter(o => o.status === 'processing').length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Being prepared
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Delivered</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {displayOrders.filter(o => o.status === 'delivered').length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Completed orders
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search and Filters */}
@@ -295,13 +362,17 @@ export function OrderManagement() {
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewOrder(order)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm">
                           <Truck className="h-4 w-4" />
                         </Button>
-                        <Select value={order.status} onValueChange={(value: Order['status']) => console.log("Update order", order.id, "to", value)}>
+                        <Select value={order.status} onValueChange={(value: Order['status']) => updateOrderStatus(order.id, value, 'Status updated via admin panel')}>
                           <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>
@@ -324,11 +395,6 @@ export function OrderManagement() {
         </CardContent>
       </Card>
 
-      {/* Order Details Modal Placeholder */}
-      <div className="text-center text-gray-500">
-        <p>Click the eye icon to view detailed order information</p>
-      </div>
-
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
@@ -343,6 +409,27 @@ export function OrderManagement() {
           </Button>
         </div>
       </div>
+
+      {/* View Order Modal */}
+      <ViewOrderModal
+        order={viewingOrder}
+        open={!!viewingOrder}
+        onOpenChange={(open) => !open && setViewingOrder(null)}
+        onUpdateOrder={(orderId, updates) => {
+          // Handle order updates if needed
+          console.log('Update order:', orderId, updates)
+        }}
+        onStatusUpdate={async (orderId, status, notes) => {
+          try {
+            await updateOrderStatus(orderId, status, notes)
+            // Refresh the orders list to show updated status
+            // The useOrders hook should handle this automatically
+          } catch (error) {
+            console.error('Failed to update order status:', error)
+            throw error
+          }
+        }}
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, supabaseServiceRole } from './supabase'
 
 export interface AdminProduct {
   id: string
@@ -133,7 +133,7 @@ export class AdminProductService {
    * Create a new product
    */
   static async createProduct(productData: CreateProductData): Promise<AdminProduct> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServiceRole
       .from('products')
       .insert([productData])
       .select()
@@ -152,7 +152,7 @@ export class AdminProductService {
   static async updateProduct(productData: UpdateProductData): Promise<AdminProduct> {
     const { id, ...updateData } = productData
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServiceRole
       .from('products')
       .update(updateData)
       .eq('id', id)
@@ -170,7 +170,7 @@ export class AdminProductService {
    * Delete a product
    */
   static async deleteProduct(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabaseServiceRole
       .from('products')
       .delete()
       .eq('id', id)
@@ -184,13 +184,30 @@ export class AdminProductService {
    * Delete multiple products
    */
   static async deleteProducts(ids: string[]): Promise<void> {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .in('id', ids)
+    console.log("AdminProductService: deleteProducts called with IDs:", ids)
+    
+    try {
+      const { error } = await supabaseServiceRole
+        .from('products')
+        .delete()
+        .in('id', ids)
 
-    if (error) {
-      throw new Error(`Failed to delete products: ${error.message}`)
+      console.log("AdminProductService: Supabase delete response - error:", error)
+
+      if (error) {
+        console.error("AdminProductService: Delete failed with error:", error)
+        throw new Error(`Failed to delete products: ${error.message}`)
+      }
+      
+      console.log("AdminProductService: Products deleted successfully")
+    } catch (err) {
+      console.error("AdminProductService: Exception caught in deleteProducts:", err)
+      console.error("AdminProductService: Error details:", {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        name: err instanceof Error ? err.name : 'UnknownError'
+      })
+      throw err
     }
   }
 
@@ -219,6 +236,7 @@ export class AdminProductService {
       totalProducts,
       inStockProducts,
       outOfStockProducts,
+      lowStockProducts,
       newProducts,
       featuredProducts,
       saleProducts
@@ -226,6 +244,7 @@ export class AdminProductService {
       supabase.from('products').select('*', { count: 'exact', head: true }),
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('in_stock', true),
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('in_stock', false),
+      supabase.from('products').select('*', { count: 'exact', head: true }).eq('in_stock', true).lt('stock_quantity', 10),
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_new', true),
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_featured', true),
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_on_sale', true)
@@ -235,6 +254,7 @@ export class AdminProductService {
       total: totalProducts.count || 0,
       inStock: inStockProducts.count || 0,
       outOfStock: outOfStockProducts.count || 0,
+      lowStock: lowStockProducts.count || 0,
       new: newProducts.count || 0,
       featured: featuredProducts.count || 0,
       onSale: saleProducts.count || 0
@@ -250,7 +270,7 @@ export class AdminProductService {
       in_stock: inStock !== undefined ? inStock : stockQuantity > 0
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServiceRole
       .from('products')
       .update(updateData)
       .eq('id', id)
@@ -269,7 +289,7 @@ export class AdminProductService {
    */
   static async toggleProductFlag(id: string, flag: 'is_new' | 'is_featured' | 'is_on_sale'): Promise<AdminProduct> {
     // First get the current value
-    const { data: currentData, error: fetchError } = await supabase
+    const { data: currentData, error: fetchError } = await supabaseServiceRole
       .from('products')
       .select(flag)
       .eq('id', id)
@@ -282,7 +302,7 @@ export class AdminProductService {
     // Toggle the flag
     const newValue = !(currentData as Record<string, boolean>)[flag]
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServiceRole
       .from('products')
       .update({ [flag]: newValue })
       .eq('id', id)

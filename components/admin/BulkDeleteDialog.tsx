@@ -4,32 +4,32 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertTriangle, Trash2 } from "lucide-react"
-import { AdminProductService } from "@/lib/adminProductService"
 
 interface BulkDeleteDialogProps {
   productIds: string[]
   productNames: string[]
   open: boolean
   onOpenChange: (open: boolean) => void
-  onProductsDeleted?: () => void
+  onDeleteProducts: (ids: string[]) => Promise<void>
 }
 
-export function BulkDeleteDialog({ productIds, productNames, open, onOpenChange, onProductsDeleted }: BulkDeleteDialogProps) {
+export function BulkDeleteDialog({ productIds, productNames, open, onOpenChange, onDeleteProducts }: BulkDeleteDialogProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleDelete = async () => {
     if (productIds.length === 0) return
 
+    console.log("BulkDeleteDialog: Starting delete process for products:", productIds)
     setLoading(true)
     setError(null)
 
     try {
-      await AdminProductService.deleteProducts(productIds)
+      await onDeleteProducts(productIds)
+      console.log("BulkDeleteDialog: Delete successful, closing dialog")
       onOpenChange(false)
-      onProductsDeleted?.()
     } catch (error) {
-      console.error('Error deleting products:', error)
+      console.error('BulkDeleteDialog: Error deleting products:', error)
       setError(error instanceof Error ? error.message : 'Failed to delete products')
     } finally {
       setLoading(false)
