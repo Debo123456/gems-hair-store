@@ -6,7 +6,7 @@ import { MessageCircle, Truck, Shield, Mail } from "lucide-react"
 
 export default function ContactPage() {
   const handleWhatsAppClick = () => {
-    const phoneNumber = "8762873324" // Remove spaces for WhatsApp link
+    const phoneNumber = "18762873324" // Jamaica country code +1
     const message = "Hello! I'm interested in your hair care products. Can you help me with more information?"
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
@@ -38,7 +38,7 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900 mb-2">876 287 3324</div>
+                  <div className="text-2xl font-bold text-gray-900 mb-2">+1 (876) 287-3324</div>
                   <p className="text-gray-600 mb-4">Phone & WhatsApp Business</p>
                   <div className="flex gap-3 justify-center">
                     <Button 
