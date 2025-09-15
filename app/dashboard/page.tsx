@@ -30,7 +30,7 @@ import { AuthenticatedOnly } from "@/components/ProtectedRoute"
 import { ViewOrderModal } from "@/components/admin/ViewOrderModal"
 import { AddAddressModal } from "@/components/AddAddressModal"
 import { Order } from "@/lib/orderTypes"
-import { Product } from "@/lib/supabase"
+import { Product } from "@/lib/productSearch"
 
 
 
@@ -620,7 +620,7 @@ export default function DashboardPage() {
                     <CardContent className="p-6">
                       <div className="relative">
                         <img
-                          src={product.image_url || '/images/products/placeholder.svg'}
+                          src={product.image || '/images/products/placeholder.svg'}
                           alt={product.name}
                           className="w-full h-48 object-cover rounded-lg mb-4"
                         />
@@ -645,9 +645,9 @@ export default function DashboardPage() {
                             <span className="text-lg font-bold text-purple-600">
                               ${product.price.toFixed(2)}
                             </span>
-                            {product.original_price && product.original_price > product.price && (
+                            {product.originalPrice && product.originalPrice > product.price && (
                               <span className="text-sm text-gray-500 line-through">
-                                ${product.original_price.toFixed(2)}
+                                ${product.originalPrice.toFixed(2)}
                               </span>
                             )}
                           </div>
@@ -669,7 +669,7 @@ export default function DashboardPage() {
                             ))}
                           </div>
                           <span className="text-sm text-gray-600">
-                            {product.rating} ({product.review_count} reviews)
+                            {product.rating} ({product.reviewCount} reviews)
                           </span>
                         </div>
                         <div className="flex gap-2 pt-2">

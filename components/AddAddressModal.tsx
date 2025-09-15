@@ -72,14 +72,14 @@ export function AddAddressModal({ open, onOpenChange, onAddressAdded }: AddAddre
       const result = await addAddress({
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
-        company: formData.company.trim() || undefined,
+        company: formData.company.trim() || null,
         address_line_1: formData.address_line_1.trim(),
-        address_line_2: formData.address_line_2.trim() || undefined,
+        address_line_2: formData.address_line_2.trim() || null,
         city: formData.city.trim(),
         state: formData.state.trim(),
         postal_code: formData.postal_code.trim(),
         country: formData.country.trim(),
-        phone: formData.phone.trim() || undefined,
+        phone: formData.phone.trim() || null,
         type: formData.type,
         is_default: formData.is_default
       })
