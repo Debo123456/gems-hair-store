@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Package, Star, ShoppingCart, Heart, Share2, ArrowLeft, Loader2 } from "lucide-react"
 import { AdvancedSearch } from "@/components/AdvancedSearch"
 import { useSearch } from "@/hooks/useSearch"
-import { Product } from "@/lib/productSearch"
+import { Product } from "@/lib/supabase"
 import { useCart } from "@/hooks/useCart"
 import { ProductService } from "@/lib/productService"
 import { ProductCategory } from "@/lib/supabase"
@@ -116,7 +116,7 @@ export default function CategoryPage() {
           case 'rating':
             return b.rating - a.rating
           case 'created_at':
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           default:
             return 0
         }
@@ -134,7 +134,7 @@ export default function CategoryPage() {
           case 'rating':
             return b.rating - a.rating
           case 'created_at':
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           default:
             return 0
         }
@@ -148,7 +148,7 @@ export default function CategoryPage() {
       id: product.id,
       name: product.name,
       price: product.price,
-      image: product.image,
+      image: product.image_url || '/images/products/placeholder.svg',
       quantity: 1,
       size: "Standard"
     })
@@ -270,9 +270,9 @@ export default function CategoryPage() {
                 <div className="relative">
                   {/* Product Image */}
                   <div className="aspect-square bg-white flex items-center justify-center">
-                    {product.image ? (
+                    {product.image_url ? (
                       <img 
-                        src={product.image}
+                        src={product.image_url}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
@@ -283,15 +283,15 @@ export default function CategoryPage() {
                   
                   {/* Badges */}
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    {product.isNew && (
+                    {product.is_new && (
                       <Badge className="bg-green-500 text-white text-xs">New</Badge>
                     )}
-                    {product.isOnSale && (
+                    {product.is_on_sale && (
                       <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm">
                         SALE
                       </Badge>
                     )}
-                    {!product.inStock && (
+                    {!product.in_stock && (
                       <Badge variant="secondary" className="text-xs">Out of Stock</Badge>
                     )}
                   </div>
@@ -311,7 +311,7 @@ export default function CategoryPage() {
                   <div className="flex items-start gap-2">
                     <CardTitle className="text-sm font-semibold line-clamp-2 leading-tight font-heading text-left flex-1">{product.name}</CardTitle>
                     <div className="flex gap-1 flex-shrink-0">
-                      {product.isOnSale && (
+                      {product.is_on_sale && (
                         <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">🔥</span>
                       )}
                       {product.rating >= 4.5 && (
@@ -327,9 +327,9 @@ export default function CategoryPage() {
                     <span className="text-base font-bold text-purple-600">
                       ${product.price}
                     </span>
-                    {product.originalPrice && product.originalPrice > product.price && (
+                    {product.original_price && product.original_price > product.price && (
                       <span className="text-xs text-gray-500 line-through">
-                        ${product.originalPrice}
+                        ${product.original_price}
                       </span>
                     )}
                   </div>
@@ -350,7 +350,7 @@ export default function CategoryPage() {
                               />
                             ))}
                           </div>
-                          <span className="text-sm text-gray-500">({product.reviewCount})</span>
+                          <span className="text-sm text-gray-500">({product.review_count})</span>
                         </div>
 
                         {/* Description - Always Visible (Condensed) */}
@@ -363,7 +363,7 @@ export default function CategoryPage() {
                         {/* Size Selection - Always Visible (Condensed) */}
                         <div className="mb-2">
                           <div className="flex gap-1 flex-wrap">
-                            {product.sizes.slice(0, 3).map((size) => (
+                            {product.sizes && product.sizes.slice(0, 3).map((size) => (
                               <span
                                 key={size}
                                 className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded border"
@@ -371,7 +371,7 @@ export default function CategoryPage() {
                                 {size}
                               </span>
                             ))}
-                            {product.sizes.length > 3 && (
+                            {product.sizes && product.sizes.length > 3 && (
                               <span className="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded border">
                                 +{product.sizes.length - 3}
                               </span>
@@ -392,11 +392,11 @@ export default function CategoryPage() {
                         <Button 
                           size="sm" 
                           className="flex-1 text-xs bg-purple-600 hover:bg-purple-700"
-                          disabled={!product.inStock}
+                          disabled={!product.in_stock}
                           onClick={() => handleAddToCart(product)}
                         >
                           <ShoppingCart className="h-3 w-3 mr-1" />
-                          {product.inStock ? "Add to Cart" : "Out of Stock"}
+                          {product.in_stock ? "Add to Cart" : "Out of Stock"}
                         </Button>
                       </div>
                 </CardContent>
@@ -425,21 +425,14 @@ export default function CategoryPage() {
                  {/* Related Categories */}
          <div className="mt-24">
            <h3 className="text-3xl font-bold text-gray-900 mb-8 font-heading">Explore Other Categories</h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-             {Object.entries(categoryMetadata).map(([slug, info]) => (
-               <Link key={slug} href={`/categories/${slug}`}>
-                 <Card className="border border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer bg-white rounded-xl shadow-md hover:scale-105 hover:-translate-y-1">
-                   <CardContent className="p-6">
-                     <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
-                       <Package className="h-7 w-7 text-purple-600" />
-                     </div>
-                    <h4 className="font-semibold text-gray-900 mb-2 font-heading">{info.title}</h4>
-                    <p className="text-sm text-gray-600 leading-relaxed">{info.description}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+           <div className="text-center">
+             <Link href="/categories">
+               <Button variant="outline" size="lg">
+                 <Package className="h-5 w-5 mr-2" />
+                 Browse All Categories
+               </Button>
+             </Link>
+           </div>
         </div>
       </div>
     </div>
