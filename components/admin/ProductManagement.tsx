@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Search, Filter, Edit, Trash2, Eye, Package, Tag, RefreshCw, AlertCircle } from "lucide-react"
+import { Plus, Search, Filter, Edit, Trash2, Eye, Package, Tag, RefreshCw, AlertCircle, Loader2 } from "lucide-react"
 import { Product } from "@/lib/productSearch"
 import { AddProductModal } from "./AddProductModal"
 import { EditProductModal } from "./EditProductModal"
@@ -18,6 +18,8 @@ import { BulkDeleteDialog } from "./BulkDeleteDialog"
 import { AdminProductCard } from "./AdminProductCard"
 import { useAdminProducts } from "@/hooks/useAdminProducts"
 import { AdminProduct } from "@/lib/adminProductService"
+import { AdminProductService } from "@/lib/adminProductService"
+import { ProductCategory } from "@/lib/supabase"
 
 export function ProductManagement() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -28,6 +30,8 @@ export function ProductManagement() {
   const [viewingProduct, setViewingProduct] = useState<AdminProduct | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<{ id: string; name: string } | null>(null)
   const [showBulkDelete, setShowBulkDelete] = useState(false)
+  const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
 
   const {
     products,
@@ -48,7 +52,23 @@ export function ProductManagement() {
     sortOrder: 'desc'
   })
 
-  const categories = ["all", "Hair Care", "Treatment", "Styling", "Tools", "Accessories"]
+  // Load categories from database
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true)
+        const dbCategories = await AdminProductService.getCategories()
+        setCategories(dbCategories)
+      } catch (error) {
+        console.error('Failed to load categories:', error)
+        setCategories([])
+      } finally {
+        setCategoriesLoading(false)
+      }
+    }
+
+    loadCategories()
+  }, [])
 
   // Update search and category filters
   const handleSearchChange = (value: string) => {
@@ -204,11 +224,21 @@ export function ProductManagement() {
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category === "all" ? "All Categories" : category}
+                <SelectItem value="all">All Categories</SelectItem>
+                {categoriesLoading ? (
+                  <SelectItem value="loading" disabled>
+                    <div className="flex items-center">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Loading categories...
+                    </div>
                   </SelectItem>
-                ))}
+                ) : (
+                  categories.map(category => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             <div className="flex items-center gap-2">

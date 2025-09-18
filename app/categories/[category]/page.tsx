@@ -5,41 +5,14 @@ import { useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Package, Star, ShoppingCart, Heart, Share2, ArrowLeft } from "lucide-react"
+import { Package, Star, ShoppingCart, Heart, Share2, ArrowLeft, Loader2 } from "lucide-react"
 import { AdvancedSearch } from "@/components/AdvancedSearch"
 import { useSearch } from "@/hooks/useSearch"
-import { getProductsByCategory, Product } from "@/lib/productSearch"
+import { Product } from "@/lib/productSearch"
 import { useCart } from "@/hooks/useCart"
+import { ProductService } from "@/lib/productService"
+import { ProductCategory } from "@/lib/supabase"
 import Link from "next/link"
-
-// Category metadata with proper slugs
-const categoryMetadata: Record<string, { title: string; description: string; slug: string }> = {
-  "hair-care": {
-    title: "Hair Care",
-    description: "Discover our range of gentle, natural shampoos and conditioners designed for all hair types",
-    slug: "hair-care"
-  },
-  "treatment": {
-    title: "Treatment",
-    description: "Nourish and repair your hair with our premium oils and intensive treatments",
-    slug: "treatment"
-  },
-  "styling": {
-    title: "Styling Products",
-    description: "Create the perfect look with our professional styling products and tools",
-    slug: "styling"
-  },
-  "tools": {
-    title: "Tools & Accessories",
-    description: "Professional tools and accessories for perfect hair care and styling",
-    slug: "tools"
-  },
-  "accessories": {
-    title: "Accessories",
-    description: "Essential hair care accessories and styling tools",
-    slug: "accessories"
-  }
-}
 
 export default function CategoryPage() {
   const params = useParams()
@@ -49,46 +22,69 @@ export default function CategoryPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [categoryInfo, setCategoryInfo] = useState<ProductCategory | null>(null)
+  const [categoryLoading, setCategoryLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Get category info
-  const categoryInfo = categoryMetadata[category] || {
-    title: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
-    description: "Browse our products in this category",
-    slug: category
-  }
-
-  // Set category in search context only when category param changes
+  // Load category info from database
   useEffect(() => {
-    if (category) {
-      setCategory(categoryInfo.title)
+    const loadCategoryInfo = async () => {
+      if (!category) return
+      
+      try {
+        setCategoryLoading(true)
+        setError(null)
+        
+        const categoryData = await ProductService.getCategoryBySlug(category)
+        if (categoryData) {
+          setCategoryInfo(categoryData)
+          setCategory(categoryData.name)
+        } else {
+          setError("Category not found")
+        }
+      } catch (err) {
+        console.error("Failed to load category info:", err)
+        setError("Failed to load category information")
+      } finally {
+        setCategoryLoading(false)
+      }
     }
-  }, [category, setCategory]) // Remove categoryInfo.title from dependencies
+
+    loadCategoryInfo()
+  }, [category, setCategory])
 
   // Load products for this category
   useEffect(() => {
-    if (category) {
-      setIsLoading(true)
+    const loadCategoryProducts = async () => {
+      if (!category || !categoryInfo) return
+      
       try {
-        // Map category slug to actual category names in our mock data
-        let categoryName = categoryInfo.title
-        if (category === "hair-care") categoryName = "Hair Oils & Treatments"
-        if (category === "treatment") categoryName = "Hair Masks"
-        if (category === "styling") categoryName = "Styling Products"
-        if (category === "tools") categoryName = "Tools & Accessories"
-        if (category === "accessories") categoryName = "Tools & Accessories"
+        setIsLoading(true)
+        setError(null)
         
-        const categoryProducts = getProductsByCategory(categoryName)
-        setProducts(categoryProducts)
-        setFilteredProducts(categoryProducts)
-      } catch (error) {
-        console.error("Failed to load category products:", error)
+        const result = await ProductService.getProducts(
+          { category: categoryInfo.name },
+          { field: 'created_at', direction: 'desc' },
+          1,
+          50
+        )
+        
+        setProducts(result.products)
+        setFilteredProducts(result.products)
+      } catch (err) {
+        console.error("Failed to load category products:", err)
+        setError("Failed to load products")
         setProducts([])
         setFilteredProducts([])
       } finally {
         setIsLoading(false)
       }
     }
-  }, [category]) // Remove categoryInfo.title from dependencies
+
+    if (categoryInfo) {
+      loadCategoryProducts()
+    }
+  }, [category, categoryInfo])
 
   // Filter and sort products based on search state
   useEffect(() => {
@@ -158,12 +154,53 @@ export default function CategoryPage() {
     })
   }
 
-  if (isLoading) {
+  if (categoryLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading category...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !categoryInfo) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Category Not Found</h2>
+          <p className="text-gray-600 mb-4">{error || "The category you're looking for doesn't exist."}</p>
+          <Link href="/categories">
+            <Button>Browse All Categories</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b">
+          <div className="container mx-auto px-4 py-12">
+            <div className="text-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-purple-100 via-pink-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+                <Package className="h-12 w-12 text-purple-600" />
+              </div>
+              <h1 className="text-5xl font-bold text-gray-900 mb-4 font-heading">{categoryInfo.name}</h1>
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+                {categoryInfo.description || "Browse our products in this category"}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-600 mr-2" />
+            <p className="text-gray-600">Loading products...</p>
+          </div>
         </div>
       </div>
     )
@@ -184,8 +221,10 @@ export default function CategoryPage() {
                          <div className="w-24 h-24 bg-gradient-to-br from-purple-100 via-pink-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
                <Package className="h-12 w-12 text-purple-600" />
              </div>
-            <h1 className="text-5xl font-bold text-gray-900 mb-4 font-heading">{categoryInfo.title}</h1>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">{categoryInfo.description}</p>
+            <h1 className="text-5xl font-bold text-gray-900 mb-4 font-heading">{categoryInfo.name}</h1>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+              {categoryInfo.description || "Browse our products in this category"}
+            </p>
           </div>
         </div>
       </div>

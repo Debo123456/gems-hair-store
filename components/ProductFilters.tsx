@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
-import { Filter, X, ChevronDown, ChevronUp } from "lucide-react"
+import { Filter, X, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { ProductService } from "@/lib/productService"
+import { ProductCategory } from "@/lib/supabase"
 
 interface FilterState {
   categories: string[]
@@ -24,14 +26,8 @@ interface ProductFiltersProps {
   onFiltersChange: (filters: FilterState) => void
 }
 
-// Available filter options
-const FILTER_OPTIONS = {
-  categories: [
-    { id: 'hair-care', label: 'Hair Care' },
-    { id: 'treatment', label: 'Treatment' },
-    { id: 'styling', label: 'Styling' },
-    { id: 'tools', label: 'Tools' }
-  ],
+// Static filter options (brands and concerns)
+const STATIC_FILTER_OPTIONS = {
   brands: [
     { id: 'gems', label: 'Gems' },
     { id: 'premium', label: 'Premium' },
@@ -204,6 +200,8 @@ export const ProductFilters = ({ className, onFiltersChange }: ProductFiltersPro
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [categories, setCategories] = useState<{ id: string; label: string }[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
     brands: [],
@@ -212,6 +210,29 @@ export const ProductFilters = ({ className, onFiltersChange }: ProductFiltersPro
     minRating: 0,
     inStock: false
   })
+
+  // Load categories from database
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true)
+        const dbCategories = await ProductService.getCategories()
+        const categoryOptions = dbCategories.map(category => ({
+          id: category.slug,
+          label: category.name
+        }))
+        setCategories(categoryOptions)
+      } catch (error) {
+        console.error('Failed to load categories:', error)
+        // Fallback to empty array if categories fail to load
+        setCategories([])
+      } finally {
+        setCategoriesLoading(false)
+      }
+    }
+
+    loadCategories()
+  }, [])
 
   // Initialize filters from URL params
   useEffect(() => {
@@ -315,16 +336,25 @@ export const ProductFilters = ({ className, onFiltersChange }: ProductFiltersPro
       <ActiveFilters filters={filters} onClear={clearAllFilters} />
       
       <FilterSection title="Category">
-        <CheckboxGroup
-          options={FILTER_OPTIONS.categories}
-          selected={filters.categories}
-          onChange={(value, checked) => handleCheckboxChange('categories', value, checked)}
-        />
+        {categoriesLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+            <span className="ml-2 text-sm text-gray-500">Loading categories...</span>
+          </div>
+        ) : categories.length > 0 ? (
+          <CheckboxGroup
+            options={categories}
+            selected={filters.categories}
+            onChange={(value, checked) => handleCheckboxChange('categories', value, checked)}
+          />
+        ) : (
+          <p className="text-sm text-gray-500">No categories available</p>
+        )}
       </FilterSection>
 
       <FilterSection title="Brand">
         <CheckboxGroup
-          options={FILTER_OPTIONS.brands}
+          options={STATIC_FILTER_OPTIONS.brands}
           selected={filters.brands}
           onChange={(value, checked) => handleCheckboxChange('brands', value, checked)}
         />
@@ -332,7 +362,7 @@ export const ProductFilters = ({ className, onFiltersChange }: ProductFiltersPro
 
       <FilterSection title="Concern">
         <CheckboxGroup
-          options={FILTER_OPTIONS.concerns}
+          options={STATIC_FILTER_OPTIONS.concerns}
           selected={filters.concerns}
           onChange={(value, checked) => handleCheckboxChange('concerns', value, checked)}
         />
