@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Plus, X, Upload, Save, AlertCircle } from "lucide-react"
 import { AdminProductService, CreateProductData } from "@/lib/adminProductService"
 import { useAuth } from "@/hooks/useAuth"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface ProductFormData {
   name: string
@@ -36,12 +37,16 @@ interface ProductFormData {
 }
 
 interface AddProductModalProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   onProductAdded?: () => void
 }
 
-export function AddProductModal({ onProductAdded }: AddProductModalProps) {
+export function AddProductModal({ open: externalOpen, onOpenChange, onProductAdded }: AddProductModalProps) {
   const { user } = useAuth()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = onOpenChange || setInternalOpen
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [newFeature, setNewFeature] = useState("")
@@ -277,13 +282,13 @@ export function AddProductModal({ onProductAdded }: AddProductModalProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL *</Label>
-                <Input
-                  id="imageUrl"
+                <ImageUpload
                   value={formData.imageUrl}
-                  onChange={(e) => handleInputChange("imageUrl", e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  required
+                  onChange={(url) => handleInputChange("imageUrl", url || "")}
+                  onError={(error) => setError(error)}
+                  label="Product Image *"
+                  placeholder="Click to upload an image"
+                  maxSize={5 * 1024 * 1024} // 5MB
                 />
               </div>
             </CardContent>

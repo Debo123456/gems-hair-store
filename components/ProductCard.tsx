@@ -8,7 +8,9 @@ import { Star, Heart } from "lucide-react"
 import { Product } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 import { useWishlist } from "@/hooks/useWishlist"
+import { StorageService } from "@/lib/storageService"
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useEffect } from "react"
 
 interface ProductCardProps {
@@ -53,12 +55,14 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       <Card className="overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 group cursor-pointer bg-white rounded-xl shadow-md hover:scale-105 hover:-translate-y-1 relative">
         <Link href={`/products/${product.id}`}>
           <div className="relative">
-            <div className="aspect-[4/3] bg-white flex items-center justify-center">
+            <div className="aspect-[4/3] bg-white flex items-center justify-center relative overflow-hidden">
               {product.image_url ? (
-                <img 
-                  src={`/images/products${product.image_url.replace('.jpg', '.svg')}`}
+                <Image
+                  src={StorageService.getOptimizedImageUrl(product.image_url, 400, 300, 85)}
                   alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                 />
               ) : (
                 <div className="h-16 w-16 text-gray-400" />

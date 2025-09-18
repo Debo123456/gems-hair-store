@@ -32,6 +32,7 @@ interface UseAdminProductsReturn {
   totalPages: number
   stats: ProductStats | null
   statsLoading: boolean
+  options: UseAdminProductsOptions
   refresh: () => Promise<void>
   createProduct: (data: CreateProductData) => Promise<void>
   updateProduct: (data: UpdateProductData) => Promise<void>
@@ -154,6 +155,7 @@ export function useAdminProducts(initialOptions: UseAdminProductsOptions = {}): 
     totalPages,
     stats,
     statsLoading,
+    options,
     refresh,
     createProduct,
     updateProduct,

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Search, Filter, Edit, Trash2, Eye, Package, Tag, RefreshCw, AlertCircle, Loader2 } from "lucide-react"
+import { Plus, Search, Filter, Edit, Trash2, Eye, Package, Tag, RefreshCw, AlertCircle, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { Product } from "@/lib/productSearch"
 import { AddProductModal } from "./AddProductModal"
 import { EditProductModal } from "./EditProductModal"
@@ -30,6 +30,7 @@ export function ProductManagement() {
   const [viewingProduct, setViewingProduct] = useState<AdminProduct | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<{ id: string; name: string } | null>(null)
   const [showBulkDelete, setShowBulkDelete] = useState(false)
+  const [showAddProduct, setShowAddProduct] = useState(false)
   const [categories, setCategories] = useState<ProductCategory[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(true)
 
@@ -42,6 +43,7 @@ export function ProductManagement() {
     totalPages,
     stats,
     statsLoading,
+    options,
     refresh,
     deleteProduct,
     deleteProducts,
@@ -132,6 +134,11 @@ export function ProductManagement() {
 
   const handleProductDeleted = () => {
     setDeletingProduct(null)
+    refresh()
+  }
+
+  const handleProductCreated = () => {
+    setShowAddProduct(false)
     refresh()
   }
 
@@ -439,33 +446,187 @@ export function ProductManagement() {
         )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
+      {/* Pagination Info */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-gray-200 rounded-lg p-4">
+        {/* Results Info */}
         <div className="text-sm text-gray-600">
-          Showing {products.length} of {total} products
+          {total > 0 ? (
+            <>Showing {((page - 1) * (options.limit || 20)) + 1} to {Math.min(page * (options.limit || 20), total)} of {total} products</>
+          ) : (
+            <>No products found. {error && `(${error})`}</>
+          )}
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            disabled={page === 1}
-            onClick={() => updateOptions({ page: page - 1 })}
+
+        {/* Items per page selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Show:</span>
+          <Select
+            value={options.limit?.toString() || "20"}
+            onValueChange={(value) => updateOptions({ limit: parseInt(value), page: 1 })}
           >
-            Previous
-          </Button>
-          <span className="text-sm text-gray-600 px-2">
-            Page {page} of {totalPages}
-          </span>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            disabled={page === totalPages}
-            onClick={() => updateOptions({ page: page + 1 })}
-          >
-            Next
-          </Button>
+            <SelectTrigger className="w-20 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-gray-600">per page</span>
         </div>
       </div>
+
+      {/* Enhanced Pagination Controls */}
+      {totalPages > 1 ? (
+        <div className="relative flex items-center justify-center gap-2 bg-white border border-gray-200 rounded-lg p-4">
+          {loading && (
+            <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-lg">
+              <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+            </div>
+          )}
+          {/* Pagination Controls */}
+          <div className="flex items-center gap-2">
+            {/* First Page */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1 || loading}
+              onClick={() => updateOptions({ page: 1 })}
+              className="hidden sm:flex"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Previous Page */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1 || loading}
+              onClick={() => updateOptions({ page: page - 1 })}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">Previous</span>
+            </Button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = []
+                const maxVisiblePages = 5
+                let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2))
+                const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+
+                // Adjust start page if we're near the end
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                  startPage = Math.max(1, endPage - maxVisiblePages + 1)
+                }
+
+                // First page and ellipsis
+                if (startPage > 1) {
+                  pages.push(
+                    <Button
+                      key={1}
+                      variant={page === 1 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateOptions({ page: 1 })}
+                      disabled={loading}
+                      className="w-8 h-8 p-0"
+                    >
+                      1
+                    </Button>
+                  )
+                  if (startPage > 2) {
+                    pages.push(
+                      <span key="ellipsis1" className="text-gray-500 px-2">
+                        ...
+                      </span>
+                    )
+                  }
+                }
+
+                // Page numbers
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <Button
+                      key={i}
+                      variant={page === i ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateOptions({ page: i })}
+                      disabled={loading}
+                      className="w-8 h-8 p-0"
+                    >
+                      {i}
+                    </Button>
+                  )
+                }
+
+                // Last page and ellipsis
+                if (endPage < totalPages) {
+                  if (endPage < totalPages - 1) {
+                    pages.push(
+                      <span key="ellipsis2" className="text-gray-500 px-2">
+                        ...
+                      </span>
+                    )
+                  }
+                  pages.push(
+                    <Button
+                      key={totalPages}
+                      variant={page === totalPages ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateOptions({ page: totalPages })}
+                      disabled={loading}
+                      className="w-8 h-8 p-0"
+                    >
+                      {totalPages}
+                    </Button>
+                  )
+                }
+
+                return pages
+              })()}
+            </div>
+
+            {/* Next Page */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === totalPages || loading}
+              onClick={() => updateOptions({ page: page + 1 })}
+            >
+              <span className="hidden sm:inline mr-1">Next</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+
+            {/* Last Page */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === totalPages || loading}
+              onClick={() => updateOptions({ page: totalPages })}
+              className="hidden sm:flex"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : total === 0 && !loading ? (
+        <div className="flex flex-col items-center justify-center gap-4 bg-white border border-gray-200 rounded-lg p-8">
+          <Package className="h-16 w-16 text-gray-400" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products Found</h3>
+            <p className="text-gray-600 mb-4">
+              {error ? `Error: ${error}` : "Get started by adding your first product to the store."}
+            </p>
+            <Button onClick={() => setShowAddProduct(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Product
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Edit Product Modal */}
       {editingProduct && (
@@ -503,6 +664,13 @@ export function ProductManagement() {
         open={showBulkDelete}
         onOpenChange={setShowBulkDelete}
         onDeleteProducts={handleBulkDeleteConfirm}
+      />
+
+      {/* Add Product Modal */}
+      <AddProductModal
+        open={showAddProduct}
+        onOpenChange={setShowAddProduct}
+        onProductAdded={handleProductCreated}
       />
     </div>
   )

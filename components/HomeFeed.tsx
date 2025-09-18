@@ -123,7 +123,7 @@ export const HomeFeed = ({ sections = ['bestSellers', 'newArrivals', 'topRated',
     categories: [],
     brands: [],
     concerns: [],
-    priceRange: [0, 200],
+    priceRange: [0, 10000], // Increased from 200 to 10000 to include expensive products
     minRating: 0,
     inStock: false
   })
@@ -211,6 +211,7 @@ export const HomeFeed = ({ sections = ['bestSellers', 'newArrivals', 'topRated',
       viewAllLink: "/products?sort=sale"
     }
   }
+
 
   return (
     <div className="py-12">

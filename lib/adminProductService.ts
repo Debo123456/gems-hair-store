@@ -74,7 +74,7 @@ export class AdminProductService {
 
     let query = supabase
       .from('products')
-      .select('*')
+      .select('*', { count: 'exact' })
 
     // Apply filters
     if (search) {

@@ -206,7 +206,7 @@ export const ProductFilters = ({ className, onFiltersChange }: ProductFiltersPro
     categories: [],
     brands: [],
     concerns: [],
-    priceRange: [0, 200],
+    priceRange: [0, 10000], // Increased to include expensive products
     minRating: 0,
     inStock: false
   })
@@ -266,7 +266,7 @@ export const ProductFilters = ({ className, onFiltersChange }: ProductFiltersPro
     if (newFilters.priceRange[0] > 0) {
       params.set('minPrice', newFilters.priceRange[0].toString())
     }
-    if (newFilters.priceRange[1] < 200) {
+    if (newFilters.priceRange[1] < 10000) {
       params.set('maxPrice', newFilters.priceRange[1].toString())
     }
     if (newFilters.minRating > 0) {
@@ -324,7 +324,7 @@ export const ProductFilters = ({ className, onFiltersChange }: ProductFiltersPro
       categories: [],
       brands: [],
       concerns: [],
-      priceRange: [0, 200],
+      priceRange: [0, 10000], // Increased to include expensive products
       minRating: 0,
       inStock: false
     }

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Plus, X, Save, AlertCircle } from "lucide-react"
 import { AdminProductService, AdminProduct, UpdateProductData } from "@/lib/adminProductService"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface EditProductModalProps {
   product: AdminProduct
@@ -249,13 +250,13 @@ export function EditProductModal({ product, open, onOpenChange, onProductUpdated
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL *</Label>
-                <Input
-                  id="imageUrl"
+                <ImageUpload
                   value={formData.imageUrl}
-                  onChange={(e) => handleInputChange("imageUrl", e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  required
+                  onChange={(url) => handleInputChange("imageUrl", url || "")}
+                  onError={(error) => setError(error)}
+                  label="Product Image *"
+                  placeholder="Click to upload an image"
+                  maxSize={5 * 1024 * 1024} // 5MB
                 />
               </div>
             </CardContent>

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Loader2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { ProductService } from "@/lib/productService"
 import { Product } from "@/lib/supabase"
 import { ProductCard } from "@/components/ProductCard"
@@ -60,65 +61,82 @@ export default function ProductsPage() {
     categories: [],
     brands: [],
     concerns: [],
-    priceRange: [0, 200],
+    priceRange: [0, 10000], // Increased to include expensive products
     minRating: 0,
     inStock: false
   })
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(12)
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   useEffect(() => {
     const loadProducts = async () => {
       try {
         setLoading(true)
-        const { products: allProducts } = await ProductService.getProducts()
-        setProducts(allProducts)
+        
+        // Convert filters to ProductService format
+        const productFilters = {
+          category: filters.categories.length > 0 ? filters.categories[0] : undefined,
+          minPrice: filters.priceRange[0] > 0 ? filters.priceRange[0] : undefined,
+          maxPrice: filters.priceRange[1] < 10000 ? filters.priceRange[1] : undefined,
+          minRating: filters.minRating > 0 ? filters.minRating : undefined,
+          inStock: filters.inStock || undefined
+        }
+        
+        const result = await ProductService.getProducts(
+          productFilters,
+          { field: 'created_at', direction: 'desc' },
+          currentPage,
+          itemsPerPage
+        )
+        
+        setProducts(result.products)
+        setTotalProducts(result.total)
+        setTotalPages(Math.ceil(result.total / itemsPerPage))
       } catch (error) {
         console.error('Failed to load products:', error)
+        setProducts([])
+        setTotalProducts(0)
+        setTotalPages(0)
       } finally {
         setLoading(false)
       }
     }
 
     loadProducts()
-  }, [])
+  }, [currentPage, itemsPerPage, filters])
 
-  // Filter products based on search and filters
+  // Filter products based on search only (other filters are handled server-side)
   const filteredProducts = products.filter(product => {
-    // Search filter
+    // Search filter (client-side for real-time search)
     if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !product.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false
     }
-
-    // Category filter
-    if (filters.categories.length > 0 && !filters.categories.includes(product.category)) {
-      return false
-    }
-
-    // Price range filter
-    if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
-      return false
-    }
-
-    // Rating filter
-    if (filters.minRating > 0 && product.rating < filters.minRating) {
-      return false
-    }
-
-    // Stock filter
-    if (filters.inStock && !product.in_stock) {
-      return false
-    }
-
     return true
   })
 
   const handleFiltersChange = (newFilters: FilterState) => {
     setFilters(newFilters)
+    setCurrentPage(1) // Reset to first page when filters change
   }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     // Search is handled by the filteredProducts logic
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // Reset to first page when changing items per page
   }
 
   return (
@@ -136,7 +154,11 @@ export default function ProductsPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <h2 className="text-2xl font-bold text-gray-900">
-              {filteredProducts.length} Products
+              {totalProducts > 0 ? (
+                <>Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalProducts)} of {totalProducts} products</>
+              ) : (
+                <>No products found</>
+              )}
             </h2>
             {searchQuery && (
               <Badge variant="secondary">
@@ -206,7 +228,7 @@ export default function ProductsPage() {
                         categories: [],
                         brands: [],
                         concerns: [],
-                        priceRange: [0, 200],
+                        priceRange: [0, 10000], // Increased to include expensive products
                         minRating: 0,
                         inStock: false
                       })
@@ -215,6 +237,173 @@ export default function ProductsPage() {
                     Clear All Filters
                   </Button>
                 )}
+              </div>
+            )}
+
+            {/* Pagination Info */}
+            {totalProducts > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-gray-200 rounded-lg p-4 mt-8">
+                {/* Results Info */}
+                <div className="text-sm text-gray-600">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalProducts)} of {totalProducts} products
+                </div>
+
+                {/* Items per page selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Show:</span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={(value) => handleItemsPerPageChange(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-20 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12</SelectItem>
+                      <SelectItem value="24">24</SelectItem>
+                      <SelectItem value="48">48</SelectItem>
+                      <SelectItem value="96">96</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">per page</span>
+                </div>
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="relative flex items-center justify-center gap-2 bg-white border border-gray-200 rounded-lg p-4 mt-4">
+                {loading && (
+                  <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-lg">
+                    <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+                  </div>
+                )}
+                
+                {/* Pagination Controls */}
+                <div className="flex items-center gap-2">
+                  {/* First Page */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1 || loading}
+                    onClick={() => handlePageChange(1)}
+                    className="hidden sm:flex"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+
+                  {/* Previous Page */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1 || loading}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1">Previous</span>
+                  </Button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const pages = []
+                      const maxVisiblePages = 5
+                      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
+                      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+
+                      // Adjust start page if we're near the end
+                      if (endPage - startPage + 1 < maxVisiblePages) {
+                        startPage = Math.max(1, endPage - maxVisiblePages + 1)
+                      }
+
+                      // First page and ellipsis
+                      if (startPage > 1) {
+                        pages.push(
+                          <Button
+                            key={1}
+                            variant={currentPage === 1 ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(1)}
+                            disabled={loading}
+                            className="w-8 h-8 p-0"
+                          >
+                            1
+                          </Button>
+                        )
+                        if (startPage > 2) {
+                          pages.push(
+                            <span key="ellipsis1" className="text-gray-500 px-2">
+                              ...
+                            </span>
+                          )
+                        }
+                      }
+
+                      // Page numbers
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                          <Button
+                            key={i}
+                            variant={currentPage === i ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(i)}
+                            disabled={loading}
+                            className="w-8 h-8 p-0"
+                          >
+                            {i}
+                          </Button>
+                        )
+                      }
+
+                      // Last page and ellipsis
+                      if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                          pages.push(
+                            <span key="ellipsis2" className="text-gray-500 px-2">
+                              ...
+                            </span>
+                          )
+                        }
+                        pages.push(
+                          <Button
+                            key={totalPages}
+                            variant={currentPage === totalPages ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(totalPages)}
+                            disabled={loading}
+                            className="w-8 h-8 p-0"
+                          >
+                            {totalPages}
+                          </Button>
+                        )
+                      }
+
+                      return pages
+                    })()}
+                  </div>
+
+                  {/* Next Page */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages || loading}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                  >
+                    <span className="hidden sm:inline mr-1">Next</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+
+                  {/* Last Page */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages || loading}
+                    onClick={() => handlePageChange(totalPages)}
+                    className="hidden sm:flex"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>

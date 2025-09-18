@@ -12,7 +12,9 @@ import { useAuth } from "@/hooks/useAuth"
 import { ProductService } from "@/lib/productService"
 import { Product } from "@/lib/supabase"
 import { ProductCard } from "@/components/ProductCard"
+import { StorageService } from "@/lib/storageService"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [quantity, setQuantity] = useState(1)
@@ -152,12 +154,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
           {/* Product Image */}
           <div className="space-y-4">
-            <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+            <div className="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center relative overflow-hidden">
               {product.image_url ? (
-                <img 
-                  src={product.image_url} 
+                <Image
+                  src={StorageService.getOptimizedImageUrl(product.image_url, 600, 600, 90)}
                   alt={product.name}
-                  className="w-full h-full object-cover rounded-lg"
+                  fill
+                  className="object-cover rounded-lg"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
                 />
               ) : (
                 <Package className="h-32 w-32 text-gray-400" />
